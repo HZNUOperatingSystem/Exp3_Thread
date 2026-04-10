@@ -45,7 +45,7 @@ git switch ch3
 ./autograde.sh DATASET_DIR REFERENCE_OUTPUT_DIR
 ```
 
-需要自定义超时时间时：
+可选：第三个参数为超时时间（秒）：
 
 ```bash
 ./autograde.sh DATASET_DIR REFERENCE_OUTPUT_DIR 60
