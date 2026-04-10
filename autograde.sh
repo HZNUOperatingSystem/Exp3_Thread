@@ -25,6 +25,13 @@ fi
 make -C "$repo_root" clean >/dev/null 2>&1 || true
 make -C "$repo_root"
 
+for symbol in thread_pool_init thread_pool_submit thread_pool_wait thread_pool_destroy; do
+  if ! grep -Eq "${symbol}[[:space:]]*\\(" "$repo_root/main.c"; then
+    echo "error: main.c must call ${symbol}(...) in ch3" >&2
+    exit 1
+  fi
+done
+
 workdir=$(mktemp -d /tmp/ch3-autograde.XXXXXX)
 compare_src=$(mktemp /tmp/ch3-compare.XXXXXX.c)
 compare_bin=$(mktemp /tmp/ch3-compare.XXXXXX)

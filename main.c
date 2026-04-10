@@ -25,7 +25,6 @@ int main(void) {
   ImageResult results[MAX_IMAGE_JOBS] = {0};
   BatchTask tasks[MAX_IMAGE_JOBS];
   FilterConfig config;
-  ThreadPool pool;
   int job_count;
   int i;
 
@@ -42,28 +41,21 @@ int main(void) {
     return 1;
   }
 
-  if (thread_pool_init(&pool, 4, job_count) != 0) {
-    fprintf(stderr, "failed to initialize thread pool\n");
-    return 1;
-  }
-
+  /* TODO:
+   * 1. Cherry-pick your ch2 thread_pool.c implementation into this branch.
+   * 2. Declare a ThreadPool and initialize it with 4 worker threads.
+   * 3. Fill tasks[i] so each task points to one image job and one result slot.
+   * 4. Submit every task with thread_pool_submit(..., image_job_worker, ...).
+   * 5. Wait for all jobs to finish, then destroy the thread pool.
+   *
+   * The serial loop below is only a starter baseline so this branch still runs.
+   * Replace it with your own thread-pool-based image batch processing.
+   */
   for (i = 0; i < job_count; ++i) {
     tasks[i].job = &jobs[i];
     tasks[i].config = &config;
     tasks[i].result = &results[i];
-    if (thread_pool_submit(&pool, image_job_worker, &tasks[i]) != 0) {
-      thread_pool_destroy(&pool);
-      return 1;
-    }
-  }
-
-  if (thread_pool_wait(&pool) != 0) {
-    thread_pool_destroy(&pool);
-    return 1;
-  }
-
-  if (thread_pool_destroy(&pool) != 0) {
-    return 1;
+    image_job_worker(&tasks[i]);
   }
 
   if (pipeline_write_metrics_csv("metrics.csv", jobs, results, job_count) != 0) {
