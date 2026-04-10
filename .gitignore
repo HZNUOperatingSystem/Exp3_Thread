@@ -1,5 +1,6 @@
 build/
-image_filter
-teacher_image_filter
-output.png
-input.png
+output/
+metrics.csv
+image_batch
+thread_pool_test
+pool_batch
