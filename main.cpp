@@ -1,4 +1,4 @@
-#include <cstddef>
+#include <thread>
 #include <vector>
 
 #include "bilateral_filter.h"
@@ -18,13 +18,22 @@ int main() {
   int image_size = width * height * channels;
   std::vector<unsigned char> dst(image_size);
   BilateralFilterParams params;
+  const int num_threads = 4;
 
-  // TODO:
-  // 1. Decide how many threads to create.
-  // 2. Split the image by rows.
-  // 3. Let each thread call bilateral_filter_rows(...) on its own row range.
-  // 4. Join all threads before writing output.png.
-  bilateral_filter_image(src, dst.data(), width, height, channels, params);
+  std::vector<std::thread> threads;
+  threads.reserve(num_threads);
+
+  for (int i = 0; i < num_threads; ++i) {
+    const int y_begin = height * i / num_threads;
+    const int y_end = height * (i + 1) / num_threads;
+    threads.emplace_back([=, &dst]() {
+      bilateral_filter_rows(src, dst.data(), width, height, channels, y_begin, y_end, params);
+    });
+  }
+
+  for (std::thread& thread : threads) {
+    thread.join();
+  }
 
   const int ok =
       stbi_write_png("output.png", width, height, channels, dst.data(), width * channels);
