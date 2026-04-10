@@ -21,8 +21,7 @@ static void pipeline_reset_result(ImageResult* result) {
   result->status_code = PIPELINE_STATUS_OK;
 }
 
-int pipeline_process_one_image(const ImageJob* job,
-                               const FilterConfig* config,
+int pipeline_process_one_image(const ImageJob* job, const FilterConfig* config,
                                ImageResult* out_result) {
   ImageBuffer input = {0, 0, 0, NULL};
   ImageBuffer gt = {0, 0, 0, NULL};
@@ -83,9 +82,7 @@ int pipeline_process_one_image(const ImageJob* job,
   return 0;
 }
 
-int pipeline_write_metrics_csv(const char* path,
-                               const ImageJob jobs[],
-                               const ImageResult results[],
+int pipeline_write_metrics_csv(const char* path, const ImageJob jobs[], const ImageResult results[],
                                int count) {
   FILE* file;
   int i;

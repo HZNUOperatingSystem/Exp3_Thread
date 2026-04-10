@@ -24,12 +24,8 @@ static void trim_line(char* line) {
   }
 }
 
-int dataset_load_jobs(const char* list_path,
-                      const char* input_dir,
-                      const char* gt_dir,
-                      const char* output_dir,
-                      ImageJob jobs[],
-                      int max_jobs) {
+int dataset_load_jobs(const char* list_path, const char* input_dir, const char* gt_dir,
+                      const char* output_dir, ImageJob jobs[], int max_jobs) {
   FILE* file;
   char line[256];
   int count = 0;
@@ -57,8 +53,7 @@ int dataset_load_jobs(const char* list_path,
     snprintf(jobs[count].name, sizeof(jobs[count].name), "%s", line);
     snprintf(jobs[count].input_path, sizeof(jobs[count].input_path), "%s/%s", input_dir, line);
     snprintf(jobs[count].gt_path, sizeof(jobs[count].gt_path), "%s/%s", gt_dir, line);
-    snprintf(jobs[count].output_path, sizeof(jobs[count].output_path), "%s/%s", output_dir,
-             line);
+    snprintf(jobs[count].output_path, sizeof(jobs[count].output_path), "%s/%s", output_dir, line);
     ++count;
   }
 

@@ -25,8 +25,7 @@ int metrics_compute_psnr(const ImageBuffer* lhs, const ImageBuffer* rhs, double*
     return -1;
   }
 
-  byte_count =
-      (size_t)lhs->width * (size_t)lhs->height * (size_t)lhs->channels;
+  byte_count = (size_t)lhs->width * (size_t)lhs->height * (size_t)lhs->channels;
   for (index = 0; index < byte_count; ++index) {
     double diff = (double)lhs->data[index] - (double)rhs->data[index];
     mse += diff * diff;
@@ -62,8 +61,7 @@ int metrics_compute_ssim(const ImageBuffer* lhs, const ImageBuffer* rhs, double*
 
   for (y = 0; y < lhs->height; ++y) {
     for (x = 0; x < lhs->width; ++x) {
-      size_t offset =
-          ((size_t)y * (size_t)lhs->width + (size_t)x) * (size_t)lhs->channels;
+      size_t offset = ((size_t)y * (size_t)lhs->width + (size_t)x) * (size_t)lhs->channels;
       mean_x += grayscale_value(lhs->data + offset, lhs->channels);
       mean_y += grayscale_value(rhs->data + offset, rhs->channels);
     }
@@ -78,8 +76,7 @@ int metrics_compute_ssim(const ImageBuffer* lhs, const ImageBuffer* rhs, double*
       double gray_y;
       double dx;
       double dy;
-      size_t offset =
-          ((size_t)y * (size_t)lhs->width + (size_t)x) * (size_t)lhs->channels;
+      size_t offset = ((size_t)y * (size_t)lhs->width + (size_t)x) * (size_t)lhs->channels;
       gray_x = grayscale_value(lhs->data + offset, lhs->channels);
       gray_y = grayscale_value(rhs->data + offset, rhs->channels);
       dx = gray_x - mean_x;
