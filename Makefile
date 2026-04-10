@@ -73,7 +73,7 @@ $(BUILD_DIR)/ch3/common/stb_impl.o: EXTRA_CFLAGS += -w
 $(BUILD_DIR)/tools/tools/compare_png.o: EXTRA_CFLAGS += -w
 
 clean:
-	rm -rf $(BUILD_DIR) output
+	rm -rf $(BUILD_DIR) output image_batch pool_batch thread_pool_test
 
 format:
 	clang-format -i $(FORMAT_FILES)
