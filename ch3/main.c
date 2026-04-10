@@ -1,9 +1,9 @@
 #include <stdio.h>
 
+#include "ch2/thread_pool.h"
 #include "common/dataset.h"
 #include "common/filter.h"
 #include "common/pipeline.h"
-#include "thread_pool.h"
 
 typedef struct {
   const ImageJob* job;
@@ -20,7 +20,9 @@ int main(void) {
   const char* list_path = "image/list.txt";
   const char* input_dir = "image/input";
   const char* gt_dir = "image/gt";
-  const char* output_dir = "output";
+  const char* output_root = "output";
+  const char* output_dir = "output/ch3";
+  const char* metrics_path = "output/ch3/metrics.csv";
   ImageJob jobs[MAX_IMAGE_JOBS];
   ImageResult results[MAX_IMAGE_JOBS] = {0};
   BatchTask tasks[MAX_IMAGE_JOBS];
@@ -36,20 +38,19 @@ int main(void) {
     return 1;
   }
 
-  if (dataset_ensure_directory(output_dir) != 0) {
-    fprintf(stderr, "failed to create %s\n", output_dir);
+  if (dataset_ensure_directory(output_root) != 0 || dataset_ensure_directory(output_dir) != 0) {
+    fprintf(stderr, "failed to create output directories\n");
     return 1;
   }
 
   /* TODO:
-   * 1. Cherry-pick your ch2 thread_pool.c implementation into this branch.
-   * 2. Declare a ThreadPool and initialize it with 4 worker threads.
-   * 3. Fill tasks[i] so each task points to one image job and one result slot.
-   * 4. Submit every task with thread_pool_submit(..., image_job_worker, ...).
-   * 5. Wait for all jobs to finish, then destroy the thread pool.
+   * 1. Bring your completed ch2 thread pool into this branch.
+   * 2. Create a pool with 4 worker threads.
+   * 3. Fill tasks[i].
+   * 4. Submit every image task to the pool.
+   * 5. Wait for all tasks to finish, then destroy the pool.
    *
-   * The serial loop below is only a starter baseline so this branch still runs.
-   * Replace it with your own thread-pool-based image batch processing.
+   * The serial loop below is only a starter baseline.
    */
   for (i = 0; i < job_count; ++i) {
     tasks[i].job = &jobs[i];
@@ -58,8 +59,8 @@ int main(void) {
     image_job_worker(&tasks[i]);
   }
 
-  if (pipeline_write_metrics_csv("metrics.csv", jobs, results, job_count) != 0) {
-    fprintf(stderr, "failed to write metrics.csv\n");
+  if (pipeline_write_metrics_csv(metrics_path, jobs, results, job_count) != 0) {
+    fprintf(stderr, "failed to write %s\n", metrics_path);
     return 1;
   }
 
