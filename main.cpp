@@ -5,6 +5,34 @@
 #include "stb/stb_image.h"
 #include "stb/stb_image_write.h"
 
+void parallel_filter(const unsigned char* src, unsigned char* dst, int width, int height,
+                     int channels, int num_threads, const BilateralFilterParams& params) {
+  if (num_threads <= 1 || height <= 1) {
+    bilateral_filter_image(src, dst, width, height, channels, params);
+    return;
+  }
+
+  int worker_count = num_threads;
+  if (worker_count > height) {
+    worker_count = height;
+  }
+
+  std::vector<std::thread> threads;
+  threads.reserve(worker_count);
+
+  for (int i = 0; i < worker_count; ++i) {
+    const int y_begin = height * i / worker_count;
+    const int y_end = height * (i + 1) / worker_count;
+    threads.emplace_back([=, &dst]() {
+      bilateral_filter_rows(src, dst, width, height, channels, y_begin, y_end, params);
+    });
+  }
+
+  for (std::thread& thread : threads) {
+    thread.join();
+  }
+}
+
 int main() {
   int width = 0;
   int height = 0;
@@ -20,20 +48,7 @@ int main() {
   BilateralFilterParams params;
   const int num_threads = 4;
 
-  std::vector<std::thread> threads;
-  threads.reserve(num_threads);
-
-  for (int i = 0; i < num_threads; ++i) {
-    const int y_begin = height * i / num_threads;
-    const int y_end = height * (i + 1) / num_threads;
-    threads.emplace_back([=, &dst]() {
-      bilateral_filter_rows(src, dst.data(), width, height, channels, y_begin, y_end, params);
-    });
-  }
-
-  for (std::thread& thread : threads) {
-    thread.join();
-  }
+  parallel_filter(src, dst.data(), width, height, channels, num_threads, params);
 
   const int ok =
       stbi_write_png("output.png", width, height, channels, dst.data(), width * channels);
