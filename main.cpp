@@ -1,9 +1,27 @@
-#include <thread>
+#include <pthread.h>
 #include <vector>
 
 #include "bilateral_filter.h"
 #include "stb/stb_image.h"
 #include "stb/stb_image_write.h"
+
+struct FilterTask {
+  const unsigned char* src;
+  unsigned char* dst;
+  int width;
+  int height;
+  int channels;
+  int y_begin;
+  int y_end;
+  BilateralFilterParams params;
+};
+
+void* filter_worker(void* arg) {
+  FilterTask* task = static_cast<FilterTask*>(arg);
+  bilateral_filter_rows(task->src, task->dst, task->width, task->height, task->channels,
+                        task->y_begin, task->y_end, task->params);
+  return nullptr;
+}
 
 void parallel_filter(const unsigned char* src, unsigned char* dst, int width, int height,
                      int channels, int num_threads, const BilateralFilterParams& params) {
@@ -17,19 +35,23 @@ void parallel_filter(const unsigned char* src, unsigned char* dst, int width, in
     worker_count = height;
   }
 
-  std::vector<std::thread> threads;
-  threads.reserve(worker_count);
+  std::vector<pthread_t> threads(worker_count);
+  std::vector<FilterTask> tasks(worker_count);
 
   for (int i = 0; i < worker_count; ++i) {
-    const int y_begin = height * i / worker_count;
-    const int y_end = height * (i + 1) / worker_count;
-    threads.emplace_back([=, &dst]() {
-      bilateral_filter_rows(src, dst, width, height, channels, y_begin, y_end, params);
-    });
+    tasks[i].src = src;
+    tasks[i].dst = dst;
+    tasks[i].width = width;
+    tasks[i].height = height;
+    tasks[i].channels = channels;
+    tasks[i].y_begin = height * i / worker_count;
+    tasks[i].y_end = height * (i + 1) / worker_count;
+    tasks[i].params = params;
+    pthread_create(&threads[i], nullptr, filter_worker, &tasks[i]);
   }
 
-  for (std::thread& thread : threads) {
-    thread.join();
+  for (int i = 0; i < worker_count; ++i) {
+    pthread_join(threads[i], nullptr);
   }
 }
 
