@@ -18,11 +18,12 @@ static void* thread_pool_worker(void* arg) {
 }
 
 int thread_pool_init(ThreadPool* pool, int thread_count, int queue_capacity) {
+  int i;
+
   if (pool == NULL || thread_count <= 0 || queue_capacity <= 0) {
     return -1;
   }
 
-  (void)thread_pool_worker;
   memset(pool, 0, sizeof(*pool));
   pool->thread_count = thread_count;
   pool->queue_capacity = queue_capacity;
@@ -40,8 +41,27 @@ int thread_pool_init(ThreadPool* pool, int thread_count, int queue_capacity) {
   pthread_cond_init(&pool->not_full, NULL);
   pthread_cond_init(&pool->all_done, NULL);
 
-  /* TODO: create thread_count worker threads with pthread_create(..., thread_pool_worker, pool). */
-  return -1;
+  for (i = 0; i < thread_count; ++i) {
+    if (pthread_create(&pool->threads[i], NULL, thread_pool_worker, pool) != 0) {
+      pthread_mutex_lock(&pool->mutex);
+      pool->stop = 1;
+      pthread_cond_broadcast(&pool->not_empty);
+      pthread_mutex_unlock(&pool->mutex);
+      while (--i >= 0) {
+        pthread_join(pool->threads[i], NULL);
+      }
+      pthread_mutex_destroy(&pool->mutex);
+      pthread_cond_destroy(&pool->not_empty);
+      pthread_cond_destroy(&pool->not_full);
+      pthread_cond_destroy(&pool->all_done);
+      free(pool->threads);
+      free(pool->queue);
+      memset(pool, 0, sizeof(*pool));
+      return -1;
+    }
+  }
+
+  return 0;
 }
 
 int thread_pool_submit(ThreadPool* pool, thread_task_fn fn, void* arg) {
@@ -75,6 +95,8 @@ int thread_pool_destroy(ThreadPool* pool) {
    * 1. Lock the mutex and set stop = 1.
    * 2. Wake up all workers.
    * 3. Join every worker thread.
+   *    This pthread_join loop should look similar to the pthread_create loop in
+   *    thread_pool_init().
    */
 
   pthread_mutex_destroy(&pool->mutex);
