@@ -44,7 +44,7 @@ int main(void) {
   }
 
   /* TODO:
-   * 1. Bring your completed ch2 thread pool into this branch.
+   * 1. Finish ch2/thread_pool.c.
    * 2. Create a pool with 4 worker threads.
    * 3. Fill tasks[i].
    * 4. Submit every image task to the pool.

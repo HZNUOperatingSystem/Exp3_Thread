@@ -8,8 +8,8 @@
 - `ch2/thread_pool.c`
 
 要做的事：
-- 先完成 `ch2`
-- 再把 `ch2` 的线程池实现用到 `ch3/main.c`
+- 先完成 `ch2/thread_pool.c`
+- 再把线程池接到 `ch3/main.c`
 
 运行：
 
