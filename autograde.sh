@@ -122,7 +122,7 @@ int main(int argc, char** argv) {
 }
 EOF
 
-gcc -std=c11 -O2 -I"$repo_root" "$compare_src" -o "$compare_bin"
+gcc -std=c11 -O2 -I"$repo_root" "$compare_src" -lm -o "$compare_bin"
 
 while IFS= read -r name; do
   [[ -z "$name" || "${name:0:1}" == "#" ]] && continue
