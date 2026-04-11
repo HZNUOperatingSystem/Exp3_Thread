@@ -1,31 +1,18 @@
 #include <stdio.h>
 
-#include "ch2/thread_pool.h"
 #include "common/dataset.h"
 #include "common/filter.h"
 #include "common/pipeline.h"
-
-typedef struct {
-  const ImageJob* job;
-  const FilterConfig* config;
-  ImageResult* result;
-} BatchTask;
-
-static void image_job_worker(void* arg) {
-  BatchTask* task = (BatchTask*)arg;
-  pipeline_process_one_image(task->job, task->config, task->result);
-}
 
 int main(void) {
   const char* list_path = "image/list.txt";
   const char* input_dir = "image/input";
   const char* gt_dir = "image/gt";
   const char* output_root = "output";
-  const char* output_dir = "output/ch3";
-  const char* metrics_path = "output/ch3/metrics.csv";
+  const char* output_dir = "output/ch2";
+  const char* metrics_path = "output/ch2/metrics.csv";
   ImageJob jobs[MAX_IMAGE_JOBS];
   ImageResult results[MAX_IMAGE_JOBS] = {0};
-  BatchTask tasks[MAX_IMAGE_JOBS];
   FilterConfig config;
   int job_count;
   int i;
@@ -43,20 +30,8 @@ int main(void) {
     return 1;
   }
 
-  /* TODO:
-   * 1. Finish ch2/thread_pool.c.
-   * 2. Create a pool with 4 worker threads.
-   * 3. Fill tasks[i].
-   * 4. Submit every image task to the pool.
-   * 5. Wait for all tasks to finish, then destroy the pool.
-   *
-   * The serial loop below is only a starter baseline.
-   */
   for (i = 0; i < job_count; ++i) {
-    tasks[i].job = &jobs[i];
-    tasks[i].config = &config;
-    tasks[i].result = &results[i];
-    image_job_worker(&tasks[i]);
+    pipeline_process_one_image(&jobs[i], &config, 1, &results[i]);
   }
 
   if (pipeline_write_metrics_csv(metrics_path, jobs, results, job_count) != 0) {

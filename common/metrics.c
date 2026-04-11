@@ -42,59 +42,25 @@ int metrics_compute_psnr(const ImageBuffer* lhs, const ImageBuffer* rhs, double*
 }
 
 int metrics_compute_ssim(const ImageBuffer* lhs, const ImageBuffer* rhs, double* out_value) {
-  int x;
-  int y;
-  double mean_x = 0.0;
-  double mean_y = 0.0;
-  double var_x = 0.0;
-  double var_y = 0.0;
-  double cov_xy = 0.0;
-  double c1;
-  double c2;
-  double pixel_count;
+  (void)grayscale_value;
+  (void)lhs;
+  (void)rhs;
+  (void)out_value;
 
-  if (!images_match(lhs, rhs) || out_value == NULL) {
-    return -1;
-  }
-
-  pixel_count = (double)(lhs->width * lhs->height);
-
-  for (y = 0; y < lhs->height; ++y) {
-    for (x = 0; x < lhs->width; ++x) {
-      size_t offset = ((size_t)y * (size_t)lhs->width + (size_t)x) * (size_t)lhs->channels;
-      mean_x += grayscale_value(lhs->data + offset, lhs->channels);
-      mean_y += grayscale_value(rhs->data + offset, rhs->channels);
-    }
-  }
-
-  mean_x /= pixel_count;
-  mean_y /= pixel_count;
-
-  for (y = 0; y < lhs->height; ++y) {
-    for (x = 0; x < lhs->width; ++x) {
-      double gray_x;
-      double gray_y;
-      double dx;
-      double dy;
-      size_t offset = ((size_t)y * (size_t)lhs->width + (size_t)x) * (size_t)lhs->channels;
-      gray_x = grayscale_value(lhs->data + offset, lhs->channels);
-      gray_y = grayscale_value(rhs->data + offset, rhs->channels);
-      dx = gray_x - mean_x;
-      dy = gray_y - mean_y;
-      var_x += dx * dx;
-      var_y += dy * dy;
-      cov_xy += dx * dy;
-    }
-  }
-
-  var_x /= pixel_count;
-  var_y /= pixel_count;
-  cov_xy /= pixel_count;
-
-  c1 = (0.01 * 255.0) * (0.01 * 255.0);
-  c2 = (0.03 * 255.0) * (0.03 * 255.0);
-
-  *out_value = ((2.0 * mean_x * mean_y + c1) * (2.0 * cov_xy + c2)) /
-               ((mean_x * mean_x + mean_y * mean_y + c1) * (var_x + var_y + c2));
-  return 0;
+  /* TODO:
+   * Implement the simplified global SSIM used in this lab.
+   *
+   * Suggested steps:
+   * 1. Check that the two images have the same shape.
+   * 2. Convert each pixel to grayscale with grayscale_value(...).
+   * 3. Compute the grayscale means mean_x and mean_y.
+   * 4. Compute var_x, var_y, and cov_xy over the whole image.
+   * 5. Use:
+   *      C1 = (0.01 * 255)^2
+   *      C2 = (0.03 * 255)^2
+   * 6. Fill:
+   *      SSIM = ((2 * mean_x * mean_y + C1) * (2 * cov_xy + C2)) /
+   *             ((mean_x * mean_x + mean_y * mean_y + C1) * (var_x + var_y + C2))
+   */
+  return -1;
 }

@@ -11,6 +11,7 @@ enum {
   PIPELINE_STATUS_SHAPE = 2,
   PIPELINE_STATUS_FILTER = 3,
   PIPELINE_STATUS_SAVE = 4,
+  PIPELINE_STATUS_METRICS = 5,
 };
 
 static void pipeline_reset_result(ImageResult* result) {
@@ -18,11 +19,12 @@ static void pipeline_reset_result(ImageResult* result) {
   result->psnr_after = 0.0;
   result->ssim_before = 0.0;
   result->ssim_after = 0.0;
+  result->ssim_available = 0;
   result->status_code = PIPELINE_STATUS_OK;
 }
 
 int pipeline_process_one_image(const ImageJob* job, const FilterConfig* config,
-                               ImageResult* out_result) {
+                               int compute_ssim, ImageResult* out_result) {
   ImageBuffer input = {0, 0, 0, NULL};
   ImageBuffer gt = {0, 0, 0, NULL};
   ImageBuffer output = {0, 0, 0, NULL};
@@ -55,7 +57,15 @@ int pipeline_process_one_image(const ImageJob* job, const FilterConfig* config,
   }
 
   metrics_compute_psnr(&input, &gt, &out_result->psnr_before);
-  metrics_compute_ssim(&input, &gt, &out_result->ssim_before);
+  if (compute_ssim) {
+    if (metrics_compute_ssim(&input, &gt, &out_result->ssim_before) != 0) {
+      out_result->status_code = PIPELINE_STATUS_METRICS;
+      image_free(&input);
+      image_free(&gt);
+      image_free(&output);
+      return -1;
+    }
+  }
 
   if (filter_apply(&input, &output, config) != 0) {
     out_result->status_code = PIPELINE_STATUS_FILTER;
@@ -74,7 +84,16 @@ int pipeline_process_one_image(const ImageJob* job, const FilterConfig* config,
   }
 
   metrics_compute_psnr(&output, &gt, &out_result->psnr_after);
-  metrics_compute_ssim(&output, &gt, &out_result->ssim_after);
+  if (compute_ssim) {
+    if (metrics_compute_ssim(&output, &gt, &out_result->ssim_after) != 0) {
+      out_result->status_code = PIPELINE_STATUS_METRICS;
+      image_free(&input);
+      image_free(&gt);
+      image_free(&output);
+      return -1;
+    }
+    out_result->ssim_available = 1;
+  }
 
   image_free(&input);
   image_free(&gt);
@@ -98,9 +117,14 @@ int pipeline_write_metrics_csv(const char* path, const ImageJob jobs[], const Im
 
   fprintf(file, "name,psnr_before,psnr_after,ssim_before,ssim_after,status_code\n");
   for (i = 0; i < count; ++i) {
-    fprintf(file, "%s,%.6f,%.6f,%.6f,%.6f,%d\n", jobs[i].name, results[i].psnr_before,
-            results[i].psnr_after, results[i].ssim_before, results[i].ssim_after,
-            results[i].status_code);
+    if (results[i].ssim_available) {
+      fprintf(file, "%s,%.6f,%.6f,%.6f,%.6f,%d\n", jobs[i].name, results[i].psnr_before,
+              results[i].psnr_after, results[i].ssim_before, results[i].ssim_after,
+              results[i].status_code);
+    } else {
+      fprintf(file, "%s,%.6f,%.6f,N/A,N/A,%d\n", jobs[i].name, results[i].psnr_before,
+              results[i].psnr_after, results[i].status_code);
+    }
   }
 
   fclose(file);

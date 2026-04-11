@@ -1,15 +1,16 @@
 # ch3
 
 目标：
-- 用自己在 `ch2` 写好的线程池并发处理图片
+- 用 `pthread` 实现线程池
 
 修改文件：
-- `ch3/main.c`
-- `ch2/thread_pool.c`
+- `ch3/thread_pool.c`
 
 要做的事：
-- 先完成 `ch2/thread_pool.c`
-- 再把线程池接到 `ch3/main.c`
+- 完成 `thread_pool_worker(...)`
+- 完成 `thread_pool_submit(...)`
+- 完成 `thread_pool_wait(...)`
+- 完成 `thread_pool_destroy(...)`
 
 运行：
 

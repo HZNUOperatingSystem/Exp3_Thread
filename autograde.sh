@@ -4,11 +4,13 @@ set -euo pipefail
 repo_root=$(cd -- "$(dirname -- "$0")" && pwd)
 dataset_dir="$repo_root/image"
 reference_dir="$repo_root/reference/expected"
+metrics_reference_dir="$repo_root/reference/metrics"
 compare_png_bin="$repo_root/build/tools/compare_png"
+compare_metrics_bin="$repo_root/build/tools/compare_metrics"
 metrics_checker="$repo_root/tools/check_metrics.awk"
 
 usage() {
-  echo "usage: $0 [ch1|ch2|ch3]" >&2
+  echo "usage: $0 [ch1|ch2|ch3|ch4]" >&2
   exit 1
 }
 
@@ -26,6 +28,13 @@ check_metrics_file() {
   fi
 
   awk -v expected_count="$expected_count" -f "$metrics_checker" "$metrics_path"
+}
+
+check_reference_metrics() {
+  local actual_metrics=$1
+  local expected_metrics=$2
+
+  "$compare_metrics_bin" "$actual_metrics" "$expected_metrics" 0.0005
 }
 
 check_reference_images() {
@@ -68,6 +77,13 @@ grade_ch1() {
     return 1
   fi
 
+  if ! check_reference_metrics "$workdir/output/ch1/metrics.csv" "$metrics_reference_dir/ch1_metrics.csv"; then
+    rm -rf "$workdir"
+    echo "ch1: fail"
+    echo "  reason: metrics.csv does not match reference" >&2
+    return 1
+  fi
+
   if ! check_reference_images "$workdir/output/ch1"; then
     rm -rf "$workdir"
     echo "ch1: fail"
@@ -80,68 +96,117 @@ grade_ch1() {
 }
 
 grade_ch2() {
-  make -C "$repo_root" ch2 >/dev/null
+  local workdir=
+  local expected_count=
 
-  if timeout 20s "$repo_root/$CH2_TARGET_PATH"; then
-    echo "ch2: pass"
-    return 0
+  make -C "$repo_root" ch2 tools >/dev/null
+
+  workdir=$(mktemp -d /tmp/ex4os-ch2.XXXXXX)
+  cp -r "$dataset_dir" "$workdir/image"
+
+  if ! (cd "$workdir" && timeout 60s "$repo_root/$CH2_TARGET_PATH"); then
+    rm -rf "$workdir"
+    echo "ch2: fail"
+    echo "  reason: ssim_batch failed or timed out" >&2
+    return 1
   fi
 
-  echo "ch2: fail"
-  echo "  reason: thread_pool_test failed or timed out" >&2
-  return 1
+  expected_count=$(list_count)
+  if ! check_metrics_file "$workdir/output/ch2/metrics.csv" "$expected_count"; then
+    rm -rf "$workdir"
+    echo "ch2: fail"
+    echo "  reason: invalid metrics.csv" >&2
+    return 1
+  fi
+
+  if ! check_reference_metrics "$workdir/output/ch2/metrics.csv" "$metrics_reference_dir/ch2_metrics.csv"; then
+    rm -rf "$workdir"
+    echo "ch2: fail"
+    echo "  reason: metrics.csv does not match reference" >&2
+    return 1
+  fi
+
+  if ! check_reference_images "$workdir/output/ch2"; then
+    rm -rf "$workdir"
+    echo "ch2: fail"
+    echo "  reason: output images do not match reference" >&2
+    return 1
+  fi
+
+  rm -rf "$workdir"
+  echo "ch2: pass"
 }
 
-check_ch3_source() {
-  local source_path="$repo_root/ch3/main.c"
+check_ch4_source() {
+  local source_path="$repo_root/ch4/main.c"
   local symbol=
 
   for symbol in thread_pool_init thread_pool_submit thread_pool_wait thread_pool_destroy; do
     if ! grep -Eq "${symbol}[[:space:]]*\\(" "$source_path"; then
-      echo "missing required call in ch3/main.c: ${symbol}(...)" >&2
+      echo "missing required call in ch4/main.c: ${symbol}(...)" >&2
       return 1
     fi
   done
 }
 
 grade_ch3() {
+  make -C "$repo_root" ch3 >/dev/null
+
+  if timeout 20s "$repo_root/$CH3_TARGET_PATH"; then
+    echo "ch3: pass"
+    return 0
+  fi
+
+  echo "ch3: fail"
+  echo "  reason: thread_pool_test failed or timed out" >&2
+  return 1
+}
+
+grade_ch4() {
   local workdir=
   local expected_count=
 
-  make -C "$repo_root" ch3 tools >/dev/null
+  make -C "$repo_root" ch4 tools >/dev/null
 
-  if ! check_ch3_source; then
-    echo "ch3: fail"
+  if ! check_ch4_source; then
+    echo "ch4: fail"
     return 1
   fi
 
-  workdir=$(mktemp -d /tmp/ex4os-ch3.XXXXXX)
+  workdir=$(mktemp -d /tmp/ex4os-ch4.XXXXXX)
   cp -r "$dataset_dir" "$workdir/image"
 
-  if ! (cd "$workdir" && timeout 60s "$repo_root/$CH3_TARGET_PATH"); then
+  if ! (cd "$workdir" && timeout 60s "$repo_root/$CH4_TARGET_PATH"); then
     rm -rf "$workdir"
-    echo "ch3: fail"
+    echo "ch4: fail"
     echo "  reason: pool_batch failed or timed out" >&2
     return 1
   fi
 
   expected_count=$(list_count)
-  if ! check_metrics_file "$workdir/output/ch3/metrics.csv" "$expected_count"; then
+  if ! check_metrics_file "$workdir/output/ch4/metrics.csv" "$expected_count"; then
     rm -rf "$workdir"
-    echo "ch3: fail"
+    echo "ch4: fail"
     echo "  reason: invalid metrics.csv" >&2
     return 1
   fi
 
-  if ! check_reference_images "$workdir/output/ch3"; then
+  if ! check_reference_metrics "$workdir/output/ch4/metrics.csv" "$metrics_reference_dir/ch4_metrics.csv"; then
     rm -rf "$workdir"
-    echo "ch3: fail"
+    echo "ch4: fail"
+    echo "  reason: metrics.csv does not match reference" >&2
+    return 1
+  fi
+
+  if ! check_reference_images "$workdir/output/ch4"; then
+    rm -rf "$workdir"
+    echo "ch4: fail"
     echo "  reason: output images do not match reference" >&2
     return 1
   fi
 
   rm -rf "$workdir"
-  echo "ch3: pass"
+  echo "ch4: pass"
 }
 
 main() {
@@ -153,6 +218,7 @@ main() {
       grade_ch1 || failures=1
       grade_ch2 || failures=1
       grade_ch3 || failures=1
+      grade_ch4 || failures=1
       ;;
     ch1)
       grade_ch1 || failures=1
@@ -162,6 +228,9 @@ main() {
       ;;
     ch3)
       grade_ch3 || failures=1
+      ;;
+    ch4)
+      grade_ch4 || failures=1
       ;;
     *)
       usage
@@ -174,7 +243,8 @@ main() {
 }
 
 CH1_TARGET_PATH=build/ch1/image_batch
-CH2_TARGET_PATH=build/ch2/thread_pool_test
-CH3_TARGET_PATH=build/ch3/pool_batch
+CH2_TARGET_PATH=build/ch2/ssim_batch
+CH3_TARGET_PATH=build/ch3/thread_pool_test
+CH4_TARGET_PATH=build/ch4/pool_batch
 
 main "$@"

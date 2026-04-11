@@ -1,23 +1,31 @@
 #include <stdio.h>
 
+#include "ch3/thread_pool.h"
 #include "common/dataset.h"
 #include "common/filter.h"
 #include "common/pipeline.h"
 
-#define IMAGE_PARALLEL_FOR
-/* TODO: replace the line above with:
- * #define IMAGE_PARALLEL_FOR _Pragma("omp parallel for schedule(dynamic, 1)")
- */
+typedef struct {
+  const ImageJob* job;
+  const FilterConfig* config;
+  ImageResult* result;
+} BatchTask;
+
+static void image_job_worker(void* arg) {
+  BatchTask* task = (BatchTask*)arg;
+  pipeline_process_one_image(task->job, task->config, 1, task->result);
+}
 
 int main(void) {
   const char* list_path = "image/list.txt";
   const char* input_dir = "image/input";
   const char* gt_dir = "image/gt";
   const char* output_root = "output";
-  const char* output_dir = "output/ch1";
-  const char* metrics_path = "output/ch1/metrics.csv";
+  const char* output_dir = "output/ch4";
+  const char* metrics_path = "output/ch4/metrics.csv";
   ImageJob jobs[MAX_IMAGE_JOBS];
   ImageResult results[MAX_IMAGE_JOBS] = {0};
+  BatchTask tasks[MAX_IMAGE_JOBS];
   FilterConfig config;
   int job_count;
   int i;
@@ -35,9 +43,20 @@ int main(void) {
     return 1;
   }
 
-  IMAGE_PARALLEL_FOR
+  /* TODO:
+   * 1. Finish ch3/thread_pool.c.
+   * 2. Create a pool with 4 worker threads.
+   * 3. Fill tasks[i].
+   * 4. Submit every image task to the pool.
+   * 5. Wait for all tasks to finish, then destroy the pool.
+   *
+   * The serial loop below is only a starter baseline.
+   */
   for (i = 0; i < job_count; ++i) {
-    pipeline_process_one_image(&jobs[i], &config, 0, &results[i]);
+    tasks[i].job = &jobs[i];
+    tasks[i].config = &config;
+    tasks[i].result = &results[i];
+    image_job_worker(&tasks[i]);
   }
 
   if (pipeline_write_metrics_csv(metrics_path, jobs, results, job_count) != 0) {

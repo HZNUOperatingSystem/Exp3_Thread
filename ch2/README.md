@@ -1,16 +1,13 @@
 # ch2
 
 目标：
-- 用 `pthread` 实现线程池
+- 补全简化版 `SSIM` 计算
 
 修改文件：
-- `ch2/thread_pool.c`
+- `common/metrics.c`
 
 要做的事：
-- 完成 `thread_pool_worker(...)`
-- 完成 `thread_pool_submit(...)`
-- 完成 `thread_pool_wait(...)`
-- 完成 `thread_pool_destroy(...)`
+- 完成 `metrics_compute_ssim(...)`
 
 运行：
 
