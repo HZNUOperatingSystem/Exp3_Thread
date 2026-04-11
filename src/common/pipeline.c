@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "common/image_io.h"
 #include "common/metrics.h"
@@ -27,11 +28,21 @@ static int pipeline_has_failures(const ImageResult results[], int count) {
   return 0;
 }
 
+static int pipeline_is_valid_chapter(const char* chapter) {
+  return strcmp(chapter, "ch1") == 0 || strcmp(chapter, "ch2") == 0 ||
+         strcmp(chapter, "ch3") == 0 || strcmp(chapter, "ch4") == 0;
+}
+
 static const char* pipeline_current_chapter(void) {
   const char* chapter = getenv("LAB_CHAPTER");
 
   if (chapter == NULL || chapter[0] == '\0') {
     fprintf(stderr, "LAB_CHAPTER is not set\n");
+    return NULL;
+  }
+
+  if (!pipeline_is_valid_chapter(chapter)) {
+    fprintf(stderr, "invalid LAB_CHAPTER: %s\n", chapter);
     return NULL;
   }
 
