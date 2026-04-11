@@ -1,7 +1,15 @@
+BASH ?= bash
+LAB_META := $(BASH) tools/lab_meta.sh
+CHAPTERS := $(shell $(LAB_META) list-chapters)
+IMAGE_CHAPTERS := $(shell $(LAB_META) list-image-chapters)
+TOOLS := compare_png compare_metrics
+CHAPTER_BINARY := lab
+RUN_TARGETS := $(addprefix run-,$(CHAPTERS))
+PATH_TARGETS := $(addprefix path-,$(CHAPTERS))
+
 # platform-specific openmp resolution
 
 UNAME_S := $(shell uname -s)
-
 ifeq ($(UNAME_S),Darwin)
     ifeq ($(shell brew list libomp >/dev/null 2>&1; echo $$?),1)
         $(error libomp is not installed on macOS. Please run: brew install libomp)
@@ -20,73 +28,68 @@ CC ?= gcc # alias to clang on macOS
 CPPFLAGS ?= -I.
 CFLAGS ?= -std=c11 -O2 -Wall -Wextra
 LDFLAGS ?=
-LDLIBS ?= -lm -pthread
+LDLIBS ?= -lm
 
 BUILD_DIR ?= build
-PTHREAD_FLAGS := -pthread
+PTHREAD_CFLAGS := -pthread
+PTHREAD_LDLIBS := -pthread
 
-COMMON_SOURCES := common/dataset.c common/filter.c common/image_io.c common/metrics.c common/pipeline.c common/stb_impl.c
-
-CH1_SOURCES := ch1/main.c $(COMMON_SOURCES)
-CH2_SOURCES := ch2/main.c $(COMMON_SOURCES)
-CH3_SOURCES := ch3/test_main.c ch3/thread_pool.c
-CH4_SOURCES := ch4/main.c ch3/thread_pool.c $(COMMON_SOURCES)
-TOOLS_SOURCES := tools/compare_png.c tools/compare_metrics.c
-
-CH1_TARGET := $(BUILD_DIR)/ch1/image_batch
-CH2_TARGET := $(BUILD_DIR)/ch2/ssim_batch
-CH3_TARGET := $(BUILD_DIR)/ch3/thread_pool_test
-CH4_TARGET := $(BUILD_DIR)/ch4/pool_batch
-COMPARE_PNG_TARGET := $(BUILD_DIR)/tools/compare_png
-COMPARE_METRICS_TARGET := $(BUILD_DIR)/tools/compare_metrics
-
-CH1_OBJECTS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(CH1_SOURCES))
-CH2_OBJECTS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(CH2_SOURCES))
-CH3_OBJECTS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(CH3_SOURCES))
-CH4_OBJECTS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(CH4_SOURCES))
-TOOLS_OBJECTS := $(patsubst %.c,$(BUILD_DIR)/%.o,$(TOOLS_SOURCES))
-
-ALL_SOURCES := $(wildcard *.c) $(wildcard ch1/*.c) $(wildcard ch2/*.c) $(wildcard ch3/*.c) $(wildcard ch4/*.c) $(wildcard common/*.c) $(wildcard tools/*.c)
-ALL_HEADERS := $(wildcard *.h) $(wildcard ch1/*.h) $(wildcard ch2/*.h) $(wildcard ch3/*.h) $(wildcard ch4/*.h) $(wildcard common/*.h) $(wildcard tools/*.h)
+FORMAT_FILES := $(shell find . \( -path './.git' -o -path './build' \) -prune -o -type f \( -name '*.c' -o -name '*.h' \) -print)
+GENERATED_OUTPUTS := $(foreach chapter,$(IMAGE_CHAPTERS),$(shell $(LAB_META) output-dir $(chapter)))
+chapter_target = $(BUILD_DIR)/$(1)/$(CHAPTER_BINARY)
+chapter_objects = $(patsubst %.c,$(BUILD_DIR)/%.o,$(shell $(LAB_META) sources $(1)))
+tool_target = $(BUILD_DIR)/tools/$(1)
 
 all: ch1 ch2 ch3 ch4 tools
 
-ch1: $(CH1_TARGET)
-ch2: $(CH2_TARGET)
-ch3: $(CH3_TARGET)
-ch4: $(CH4_TARGET)
-tools: $(COMPARE_PNG_TARGET) $(COMPARE_METRICS_TARGET)
+tools: $(TOOLS)
 
-define LINK_RULE
-$(1): $(2)
+help:
+	@printf '%s\n' 'Common targets: all clean format tools help'
+	@printf '%s\n' 'Chapter build targets: $(CHAPTERS)'
+	@printf '%s\n' 'Run helpers: $(RUN_TARGETS)'
+	@printf '%s\n' 'Path helpers: $(PATH_TARGETS)'
+
+define DEFINE_CHAPTER_RULES
+$(1): $(call chapter_target,$(1))
+
+$(call chapter_target,$(1)): $(call chapter_objects,$(1))
+	@mkdir -p $$(dir $$@)
+	$(CC) $$^ $(LDFLAGS) $(LDLIBS) $(if $(filter ch1,$(1)),$(OMP_LDFLAGS)) $(if $(filter ch3 ch4,$(1)),$(PTHREAD_LDLIBS)) -o $$@
+
+run-$(1): $(1)
+	./$(call chapter_target,$(1))
+
+path-$(1):
+	@printf '%s\n' '$(call chapter_target,$(1))'
+endef
+
+$(foreach chapter,$(CHAPTERS),$(eval $(call DEFINE_CHAPTER_RULES,$(chapter))))
+
+define DEFINE_TOOL_RULES
+$(1): $(call tool_target,$(1))
+
+$(call tool_target,$(1)): $(BUILD_DIR)/tools/$(1).o
 	@mkdir -p $$(dir $$@)
 	$(CC) $$^ $(LDFLAGS) $(LDLIBS) -o $$@
 endef
 
-$(eval $(call LINK_RULE,$(CH1_TARGET),$(CH1_OBJECTS)))
-$(eval $(call LINK_RULE,$(CH2_TARGET),$(CH2_OBJECTS)))
-$(eval $(call LINK_RULE,$(CH3_TARGET),$(CH3_OBJECTS)))
-$(eval $(call LINK_RULE,$(CH4_TARGET),$(CH4_OBJECTS)))
-$(eval $(call LINK_RULE,$(COMPARE_PNG_TARGET),$(word 1,$(TOOLS_OBJECTS))))
-$(eval $(call LINK_RULE,$(COMPARE_METRICS_TARGET),$(word 2,$(TOOLS_OBJECTS))))
+$(foreach tool,$(TOOLS),$(eval $(call DEFINE_TOOL_RULES,$(tool))))
 
 $(BUILD_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-$(CH1_OBJECTS): CFLAGS += $(OMP_CFLAGS)
-$(CH2_OBJECTS) $(CH3_OBJECTS) $(CH4_OBJECTS): CFLAGS += $(PTHREAD_FLAGS)
-
-$(CH1_TARGET): LDFLAGS += $(OMP_LDFLAGS)
-$(CH2_TARGET) $(CH3_TARGET) $(CH4_TARGET): LDFLAGS += $(PTHREAD_FLAGS)
+$(BUILD_DIR)/ch1/main.o: CFLAGS += $(OMP_CFLAGS)
+$(BUILD_DIR)/ch3/test_main.o $(BUILD_DIR)/ch3/thread_pool.o $(BUILD_DIR)/ch4/main.o: CFLAGS += $(PTHREAD_CFLAGS)
 
 $(BUILD_DIR)/common/stb_impl.o: CFLAGS += -w
 $(BUILD_DIR)/tools/compare_png.o: CFLAGS += -w
 
 clean:
-	rm -rf $(BUILD_DIR) output image_batch ssim_batch pool_batch thread_pool_test
+	rm -rf $(BUILD_DIR) $(GENERATED_OUTPUTS)
 
 format:
-	clang-format -i $(ALL_SOURCES) $(ALL_HEADERS)
+	clang-format -i $(FORMAT_FILES)
 
-.PHONY: all ch1 ch2 ch3 ch4 tools clean format
+.PHONY: all tools clean format help $(CHAPTERS) $(TOOLS) $(RUN_TARGETS) $(PATH_TARGETS)
