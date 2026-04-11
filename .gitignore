@@ -1,6 +1,10 @@
+# artifacts
 build/
 output/
-metrics.csv
-image_batch
-thread_pool_test
-pool_batch
+
+# development
+/references
+playground
+
+# os-related
+.DS_Store
