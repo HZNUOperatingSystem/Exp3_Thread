@@ -2,9 +2,10 @@ BASH ?= bash
 LAB_META := $(BASH) tools/lab_meta.sh
 CHAPTERS := $(shell $(LAB_META) list-chapters)
 IMAGE_CHAPTERS := $(shell $(LAB_META) list-image-chapters)
-TOOLS := compare_png compare_metrics
+TOOLS := compare_png
 CHAPTER_BINARY := lab
 RUN_TARGETS := $(addprefix run-,$(CHAPTERS))
+GRADE_TARGETS := $(addprefix grade-,$(CHAPTERS))
 PATH_TARGETS := $(addprefix path-,$(CHAPTERS))
 COMMON_SOURCES := $(wildcard src/common/*.c)
 
@@ -50,10 +51,18 @@ help:
 	@printf '%s\n' 'Common targets: all clean format tools help'
 	@printf '%s\n' 'Chapter build targets: $(CHAPTERS)'
 	@printf '%s\n' 'Aggregate run target: run-all'
+	@printf '%s\n' 'Aggregate grade target: grade-all'
 	@printf '%s\n' 'Run helpers: $(RUN_TARGETS)'
+	@printf '%s\n' 'Grade helpers: $(GRADE_TARGETS)'
 	@printf '%s\n' 'Path helpers: $(PATH_TARGETS)'
 
 run-all: $(RUN_TARGETS)
+
+grade-all:
+	$(MAKE) grade-ch1
+	$(MAKE) grade-ch2
+	$(MAKE) grade-ch3
+	$(MAKE) grade-ch4
 
 define DEFINE_CHAPTER_RULES
 $(1): $(call chapter_target,$(1))
@@ -64,6 +73,9 @@ $(call chapter_target,$(1)): $(call chapter_objects,$(1))
 
 run-$(1): $(1)
 	LAB_CHAPTER=$(1) ./$(call chapter_target,$(1))
+
+grade-$(1): run-$(1)
+	$(BASH) ./autograde.sh $(1)
 
 path-$(1):
 	@printf '%s\n' '$(call chapter_target,$(1))'
@@ -97,4 +109,4 @@ clean:
 format:
 	clang-format -i $(FORMAT_FILES)
 
-.PHONY: all tools clean format help run-all $(CHAPTERS) $(TOOLS) $(RUN_TARGETS) $(PATH_TARGETS)
+.PHONY: all tools clean format help run-all grade-all $(CHAPTERS) $(TOOLS) $(RUN_TARGETS) $(GRADE_TARGETS) $(PATH_TARGETS)

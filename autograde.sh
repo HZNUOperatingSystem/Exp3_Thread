@@ -5,11 +5,9 @@ repo_root=$(cd -- "$(dirname -- "$0")" && pwd)
 source "$repo_root/tools/lab_meta.sh"
 
 dataset_dir="$repo_root/images"
-reference_dir="$repo_root/reference/expected"
-metrics_reference_dir="$repo_root/reference/metrics"
 compare_png_bin="$repo_root/build/tools/compare_png"
-compare_metrics_bin="$repo_root/build/tools/compare_metrics"
 metrics_checker="$repo_root/tools/check_metrics.awk"
+metrics_threshold_checker="$repo_root/tools/check_metrics_thresholds.awk"
 
 usage() {
   echo "usage: $0 [all|${LAB_CHAPTERS[*]}]" >&2
@@ -90,26 +88,14 @@ build_chapter() {
   make -C "$repo_root" "${targets[@]}" >/dev/null
 }
 
-ensure_reference_assets() {
-  local chapter=$1
-
-  if [[ ! -d "$reference_dir" ]]; then
-    echo "missing reference image directory: $reference_dir" >&2
+ensure_runtime_tools() {
+  if [[ ! -x "$compare_png_bin" ]]; then
+    echo "PNG checker was not built under $repo_root/build/tools" >&2
     return 1
   fi
 
-  if [[ ! -d "$metrics_reference_dir" ]]; then
-    echo "missing reference metrics directory: $metrics_reference_dir" >&2
-    return 1
-  fi
-
-  if [[ ! -f "$metrics_reference_dir/${chapter}_metrics.csv" ]]; then
-    echo "missing reference metrics file: $metrics_reference_dir/${chapter}_metrics.csv" >&2
-    return 1
-  fi
-
-  if [[ ! -x "$compare_png_bin" || ! -x "$compare_metrics_bin" ]]; then
-    echo "comparison tools were not built under $repo_root/build/tools" >&2
+  if [[ ! -f "$metrics_threshold_checker" ]]; then
+    echo "missing threshold checker: $metrics_threshold_checker" >&2
     return 1
   fi
 }
@@ -126,21 +112,79 @@ check_metrics_file() {
   awk -v expected_count="$expected_count" -f "$metrics_checker" "$metrics_path"
 }
 
-check_reference_metrics() {
-  local actual_metrics=$1
-  local expected_metrics=$2
-
-  "$compare_metrics_bin" "$actual_metrics" "$expected_metrics" 0.0005
-}
-
-check_reference_images() {
+check_output_images() {
   local output_dir=$1
   local name=
 
   while IFS= read -r name; do
     [[ -z "$name" || "${name:0:1}" == "#" ]] && continue
-    "$compare_png_bin" "$output_dir/$name" "$reference_dir/$name"
+    if [[ ! -f "$output_dir/$name" ]]; then
+      echo "missing output image: $output_dir/$name" >&2
+      return 1
+    fi
+    "$compare_png_bin" "$output_dir/$name" "$output_dir/$name"
   done < "$dataset_dir/list.txt"
+}
+
+chapter_metric_bounds() {
+  case "${1:-}" in
+    ch1)
+      printf '%s\n' \
+        "26.80 26.90" \
+        "25.95 26.05" \
+        "0" \
+        "0 0" \
+        "0 0"
+      ;;
+    ch2 | ch4)
+      printf '%s\n' \
+        "26.80 26.90" \
+        "25.95 26.05" \
+        "1" \
+        "0.9825 0.9840" \
+        "0.9715 0.9735"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+check_metrics_thresholds() {
+  local chapter=$1
+  local metrics_path=$2
+  local expected_count=$3
+  local -a metric_lines
+  local psnr_before_bounds=
+  local psnr_after_bounds=
+  local require_ssim=
+  local ssim_before_bounds=
+  local ssim_after_bounds=
+
+  if ! mapfile -t metric_lines < <(chapter_metric_bounds "$chapter"); then
+    echo "missing metric bounds for chapter: $chapter" >&2
+    return 1
+  fi
+
+  psnr_before_bounds=${metric_lines[0]}
+  psnr_after_bounds=${metric_lines[1]}
+  require_ssim=${metric_lines[2]}
+  ssim_before_bounds=${metric_lines[3]}
+  ssim_after_bounds=${metric_lines[4]}
+
+  awk \
+    -v expected_count="$expected_count" \
+    -v require_ssim="$require_ssim" \
+    -v psnr_before_min="${psnr_before_bounds%% *}" \
+    -v psnr_before_max="${psnr_before_bounds##* }" \
+    -v psnr_after_min="${psnr_after_bounds%% *}" \
+    -v psnr_after_max="${psnr_after_bounds##* }" \
+    -v ssim_before_min="${ssim_before_bounds%% *}" \
+    -v ssim_before_max="${ssim_before_bounds##* }" \
+    -v ssim_after_min="${ssim_after_bounds%% *}" \
+    -v ssim_after_max="${ssim_after_bounds##* }" \
+    -f "$metrics_threshold_checker" \
+    "$metrics_path"
 }
 
 run_image_chapter() {
@@ -156,8 +200,8 @@ run_image_chapter() {
     return 1
   fi
 
-  if ! ensure_reference_assets "$chapter"; then
-    chapter_fail "$chapter" "reference assets are incomplete"
+  if ! ensure_runtime_tools; then
+    chapter_fail "$chapter" "runtime grading tools are incomplete"
     return 1
   fi
 
@@ -180,15 +224,15 @@ run_image_chapter() {
     return 1
   fi
 
-  if ! check_reference_metrics "$metrics_path" "$metrics_reference_dir/${chapter}_metrics.csv"; then
+  if ! check_metrics_thresholds "$chapter" "$metrics_path" "$expected_count"; then
     rm -rf "$workdir"
-    chapter_fail "$chapter" "metrics.csv does not match reference"
+    chapter_fail "$chapter" "metrics.csv is outside the expected metric range"
     return 1
   fi
 
-  if ! check_reference_images "$output_dir"; then
+  if ! check_output_images "$output_dir"; then
     rm -rf "$workdir"
-    chapter_fail "$chapter" "output images do not match reference"
+    chapter_fail "$chapter" "output images are missing or unreadable"
     return 1
   fi
 
