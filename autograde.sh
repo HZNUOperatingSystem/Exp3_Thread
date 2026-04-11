@@ -56,7 +56,9 @@ run_with_timeout() {
   ) &
   watchdog_pid=$!
 
-  if ! wait "$command_pid"; then
+  if wait "$command_pid"; then
+    status=0
+  else
     status=$?
   fi
 
