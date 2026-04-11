@@ -36,7 +36,7 @@ PTHREAD_CFLAGS := -pthread
 PTHREAD_LDLIBS := -pthread
 
 FORMAT_FILES := $(shell find src tools -type f \( -name '*.c' -o -name '*.h' \) -print)
-GENERATED_OUTPUTS := $(addsuffix /output,$(IMAGE_CHAPTERS))
+GENERATED_OUTPUTS := $(addprefix output/,$(IMAGE_CHAPTERS))
 chapter_target = $(BUILD_DIR)/$(1)/$(CHAPTER_BINARY)
 chapter_sources = $(wildcard src/$(1)/*.c) $(if $(filter $(1),$(IMAGE_CHAPTERS)),$(COMMON_SOURCES)) $(if $(filter ch4,$(1)),src/ch3/thread_pool.c)
 chapter_objects = $(patsubst %.c,$(BUILD_DIR)/%.o,$(call chapter_sources,$(1)))
@@ -49,8 +49,11 @@ tools: $(TOOLS)
 help:
 	@printf '%s\n' 'Common targets: all clean format tools help'
 	@printf '%s\n' 'Chapter build targets: $(CHAPTERS)'
+	@printf '%s\n' 'Aggregate run target: run-all'
 	@printf '%s\n' 'Run helpers: $(RUN_TARGETS)'
 	@printf '%s\n' 'Path helpers: $(PATH_TARGETS)'
+
+run-all: $(RUN_TARGETS)
 
 define DEFINE_CHAPTER_RULES
 $(1): $(call chapter_target,$(1))
@@ -60,7 +63,7 @@ $(call chapter_target,$(1)): $(call chapter_objects,$(1))
 	$(CC) $$^ $(LDFLAGS) $(LDLIBS) $(if $(filter ch1,$(1)),$(OMP_LDFLAGS)) $(if $(filter ch3 ch4,$(1)),$(PTHREAD_LDLIBS)) -o $$@
 
 run-$(1): $(1)
-	./$(call chapter_target,$(1))
+	LAB_CHAPTER=$(1) ./$(call chapter_target,$(1))
 
 path-$(1):
 	@printf '%s\n' '$(call chapter_target,$(1))'
@@ -94,4 +97,4 @@ clean:
 format:
 	clang-format -i $(FORMAT_FILES)
 
-.PHONY: all tools clean format help $(CHAPTERS) $(TOOLS) $(RUN_TARGETS) $(PATH_TARGETS)
+.PHONY: all tools clean format help run-all $(CHAPTERS) $(TOOLS) $(RUN_TARGETS) $(PATH_TARGETS)

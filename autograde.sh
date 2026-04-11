@@ -165,7 +165,7 @@ run_image_chapter() {
   output_dir="$workdir/$(lab_output_dir "$chapter")"
   binary_name=$(lab_binary_name "$chapter")
 
-  if ! (cd "$workdir" && run_with_timeout "$(lab_timeout_seconds "$chapter")" "$(chapter_binary_path "$chapter")"); then
+  if ! (cd "$workdir" && LAB_CHAPTER="$chapter" run_with_timeout "$(lab_timeout_seconds "$chapter")" "$(chapter_binary_path "$chapter")"); then
     rm -rf "$workdir"
     chapter_fail "$chapter" "$binary_name failed or timed out"
     return 1

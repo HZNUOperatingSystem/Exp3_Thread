@@ -1,5 +1,6 @@
 #include "common/pipeline.h"
 
+#include <stdlib.h>
 #include <stdio.h>
 
 #include "common/image_io.h"
@@ -24,6 +25,17 @@ static int pipeline_has_failures(const ImageResult results[], int count) {
   }
 
   return 0;
+}
+
+static const char* pipeline_current_chapter(void) {
+  const char* chapter = getenv("LAB_CHAPTER");
+
+  if (chapter == NULL || chapter[0] == '\0') {
+    fprintf(stderr, "LAB_CHAPTER is not set\n");
+    return NULL;
+  }
+
+  return chapter;
 }
 
 static void pipeline_reset_result(ImageResult* result) {
@@ -113,11 +125,12 @@ int pipeline_process_one_image(const ImageJob* job, const FilterConfig* config, 
   return 0;
 }
 
-int pipeline_run_image_batch(const char* chapter, int compute_ssim, ImageBatchExecutor executor) {
+int pipeline_run_image_batch(ImageBatchExecutor executor) {
   static const char* list_path = "image/list.txt";
   static const char* input_dir = "image/input";
   static const char* gt_dir = "image/gt";
-  char output_root[64];
+  static const char* output_root = "output";
+  const char* chapter;
   char output_dir[96];
   char metrics_path[128];
   ImageJob jobs[MAX_IMAGE_JOBS];
@@ -125,13 +138,17 @@ int pipeline_run_image_batch(const char* chapter, int compute_ssim, ImageBatchEx
   FilterConfig config;
   int job_count;
 
-  if (chapter == NULL || executor == NULL) {
+  if (executor == NULL) {
     return 1;
   }
 
-  snprintf(output_root, sizeof(output_root), "%s", chapter);
-  snprintf(output_dir, sizeof(output_dir), "%s/output", chapter);
-  snprintf(metrics_path, sizeof(metrics_path), "%s/output/metrics.csv", chapter);
+  chapter = pipeline_current_chapter();
+  if (chapter == NULL) {
+    return 1;
+  }
+
+  snprintf(output_dir, sizeof(output_dir), "%s/%s", output_root, chapter);
+  snprintf(metrics_path, sizeof(metrics_path), "%s/%s/metrics.csv", output_root, chapter);
 
   filter_default_config(&config);
 
@@ -146,7 +163,7 @@ int pipeline_run_image_batch(const char* chapter, int compute_ssim, ImageBatchEx
     return 1;
   }
 
-  if (executor(jobs, &config, compute_ssim, results, job_count) != 0) {
+  if (executor(jobs, &config, results, job_count) != 0) {
     return 1;
   }
 

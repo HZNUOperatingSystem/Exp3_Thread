@@ -64,7 +64,7 @@ lab_output_dir() {
     return 1
   fi
 
-  printf '%s\n' "$chapter/output"
+  printf '%s\n' "output/$chapter"
 }
 
 lab_metrics_path() {
@@ -74,7 +74,7 @@ lab_metrics_path() {
     return 1
   fi
 
-  printf '%s\n' "$chapter/output/metrics.csv"
+  printf '%s\n' "output/$chapter/metrics.csv"
 }
 
 lab_entry_source() {

@@ -4,17 +4,16 @@
 typedef struct {
   const ImageJob* job;
   const FilterConfig* config;
-  int compute_ssim;
   ImageResult* result;
 } BatchTask;
 
 static void image_job_worker(void* arg) {
   BatchTask* task = (BatchTask*)arg;
-  pipeline_process_one_image(task->job, task->config, task->compute_ssim, task->result);
+  pipeline_process_one_image(task->job, task->config, 1, task->result);
 }
 
-static int execute_jobs(const ImageJob jobs[], const FilterConfig* config, int compute_ssim,
-                        ImageResult results[], int job_count) {
+static int execute_jobs(const ImageJob jobs[], const FilterConfig* config, ImageResult results[],
+                        int job_count) {
   BatchTask tasks[MAX_IMAGE_JOBS];
   int i;
 
@@ -35,7 +34,6 @@ static int execute_jobs(const ImageJob jobs[], const FilterConfig* config, int c
   for (i = 0; i < job_count; ++i) {
     tasks[i].job = &jobs[i];
     tasks[i].config = config;
-    tasks[i].compute_ssim = compute_ssim;
     tasks[i].result = &results[i];
     image_job_worker(&tasks[i]);
   }
@@ -44,5 +42,5 @@ static int execute_jobs(const ImageJob jobs[], const FilterConfig* config, int c
 }
 
 int main(void) {
-  return pipeline_run_image_batch("ch4", 1, execute_jobs);
+  return pipeline_run_image_batch(execute_jobs);
 }
