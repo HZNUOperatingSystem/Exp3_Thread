@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "ch3/thread_pool.h"
 #include "common/pipeline.h"
 
@@ -15,27 +17,31 @@ static void image_job_worker(void* arg) {
 static int execute_jobs(const ImageJob jobs[], const FilterConfig* config, ImageResult results[],
                         int job_count) {
   BatchTask tasks[MAX_IMAGE_JOBS];
+  ThreadPool pool;
   int i;
 
-  /* TODO:
-   * 1. Finish src/ch3/thread_pool.c.
-   * 2. Create a pool with 4 worker threads.
-   *    If thread_pool_init(...) fails, use:
-   *    fprintf(stderr, "failed to initialize thread pool\n");
-   *    return 1;
-   * 3. Fill tasks[i].
-   * 4. Submit every image task to the pool.
-   * 5. Wait for all tasks to finish, then destroy the pool.
-   *    If thread_pool_wait(...) fails, remember to call
-   *    thread_pool_destroy(&pool) before returning.
-   *
-   * The serial loop below is only a starter baseline.
-   */
+  if (thread_pool_init(&pool, 4, job_count) != 0) {
+    fprintf(stderr, "failed to initialize thread pool\n");
+    return 1;
+  }
+
   for (i = 0; i < job_count; ++i) {
     tasks[i].job = &jobs[i];
     tasks[i].config = config;
     tasks[i].result = &results[i];
-    image_job_worker(&tasks[i]);
+    if (thread_pool_submit(&pool, image_job_worker, &tasks[i]) != 0) {
+      thread_pool_destroy(&pool);
+      return 1;
+    }
+  }
+
+  if (thread_pool_wait(&pool) != 0) {
+    thread_pool_destroy(&pool);
+    return 1;
+  }
+
+  if (thread_pool_destroy(&pool) != 0) {
+    return 1;
   }
 
   return 0;

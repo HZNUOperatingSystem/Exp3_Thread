@@ -61,30 +61,36 @@ int metrics_compute_ssim(const ImageBuffer* lhs, const ImageBuffer* rhs, double*
   c1 = (0.01 * 255.0) * (0.01 * 255.0);
   c2 = (0.03 * 255.0) * (0.03 * 255.0);
 
-  /* TODO: delete the temporary (void) lines below, then accumulate mean_x and mean_y. */
   for (y = 0; y < lhs->height; ++y) {
     for (x = 0; x < lhs->width; ++x) {
       size_t offset = ((size_t)y * (size_t)lhs->width + (size_t)x) * (size_t)lhs->channels;
       double gray_x = grayscale_value(lhs->data + offset, lhs->channels);
       double gray_y = grayscale_value(rhs->data + offset, rhs->channels);
-
-      (void)gray_x;
-      (void)gray_y;
-
-      /* TODO: accumulate mean_x and mean_y. */
+      mean_x += gray_x;
+      mean_y += gray_y;
     }
   }
 
   mean_x /= pixel_count;
   mean_y /= pixel_count;
 
-  /* TODO:
-   * Write a second pass similar to the loop above.
-   * Recompute gray_x and gray_y, then use:
-   *   dx = gray_x - mean_x
-   *   dy = gray_y - mean_y
-   * to accumulate var_x, var_y, and cov_xy.
-   */
+  for (y = 0; y < lhs->height; ++y) {
+    for (x = 0; x < lhs->width; ++x) {
+      double gray_x;
+      double gray_y;
+      double dx;
+      double dy;
+      size_t offset = ((size_t)y * (size_t)lhs->width + (size_t)x) * (size_t)lhs->channels;
+
+      gray_x = grayscale_value(lhs->data + offset, lhs->channels);
+      gray_y = grayscale_value(rhs->data + offset, rhs->channels);
+      dx = gray_x - mean_x;
+      dy = gray_y - mean_y;
+      var_x += dx * dx;
+      var_y += dy * dy;
+      cov_xy += dx * dy;
+    }
+  }
 
   var_x /= pixel_count;
   var_y /= pixel_count;

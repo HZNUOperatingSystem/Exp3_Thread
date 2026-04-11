@@ -4,20 +4,38 @@
 #include <string.h>
 
 static void* thread_pool_worker(void* arg) {
-  /* Starter note:
-   * - If you added temporary variables only to silence warnings, delete them
-   *   before you start the real implementation.
-   */
   ThreadPool* pool = (ThreadPool*)arg;
 
-  /* TODO:
-   * 1. Lock the queue mutex.
-   * 2. Wait on not_empty while the queue is empty and stop == 0.
-   * 3. If stop == 1 and the queue is empty, unlock and exit the worker.
-   * 4. Pop one task from the queue, update queue_size / queue_head / working_count.
-   * 5. Signal not_full, unlock, run the task, then lock again.
-   * 6. Decrease working_count and signal all_done when the pool becomes idle.
-   */
+  for (;;) {
+    ThreadTask task;
+
+    pthread_mutex_lock(&pool->mutex);
+    while (pool->queue_size == 0 && !pool->stop) {
+      pthread_cond_wait(&pool->not_empty, &pool->mutex);
+    }
+
+    if (pool->stop && pool->queue_size == 0) {
+      pthread_mutex_unlock(&pool->mutex);
+      break;
+    }
+
+    task = pool->queue[pool->queue_head];
+    pool->queue_head = (pool->queue_head + 1) % pool->queue_capacity;
+    pool->queue_size -= 1;
+    pool->working_count += 1;
+    pthread_cond_signal(&pool->not_full);
+    pthread_mutex_unlock(&pool->mutex);
+
+    task.fn(task.arg);
+
+    pthread_mutex_lock(&pool->mutex);
+    pool->working_count -= 1;
+    if (pool->queue_size == 0 && pool->working_count == 0) {
+      pthread_cond_broadcast(&pool->all_done);
+    }
+    pthread_mutex_unlock(&pool->mutex);
+  }
+
   return NULL;
 }
 
@@ -69,32 +87,27 @@ int thread_pool_init(ThreadPool* pool, int thread_count, int queue_capacity) {
 }
 
 int thread_pool_submit(ThreadPool* pool, thread_task_fn fn, void* arg) {
-  /* Starter note:
-   * - The basic parameter check has already been provided.
-   * - Delete the temporary (void) lines below once you start implementing the
-   *   real queue logic.
-   */
-  (void)pool;
-  (void)fn;
-  (void)arg;
   if (pool == NULL || fn == NULL) {
     return -1;
   }
 
-  /* TODO:
-   * 1. Lock the mutex.
-   * 2. Wait on not_full while the queue is full and stop == 0.
-   */
+  pthread_mutex_lock(&pool->mutex);
+  while (pool->queue_size == pool->queue_capacity && !pool->stop) {
+    pthread_cond_wait(&pool->not_full, &pool->mutex);
+  }
+
   if (pool->stop) {
     pthread_mutex_unlock(&pool->mutex);
     return -1;
   }
 
-  /* TODO:
-   * 3. Push the new task into the circular queue.
-   * 4. Signal not_empty and unlock.
-   */
-  return -1;
+  pool->queue[pool->queue_tail].fn = fn;
+  pool->queue[pool->queue_tail].arg = arg;
+  pool->queue_tail = (pool->queue_tail + 1) % pool->queue_capacity;
+  pool->queue_size += 1;
+  pthread_cond_signal(&pool->not_empty);
+  pthread_mutex_unlock(&pool->mutex);
+  return 0;
 }
 
 int thread_pool_wait(ThreadPool* pool) {
@@ -102,27 +115,30 @@ int thread_pool_wait(ThreadPool* pool) {
     return -1;
   }
 
-  /* TODO:
-   * The NULL check has already been provided.
-   * Finish the synchronization logic so this function waits until
-   * queue_size == 0 and working_count == 0.
-   */
-  return -1;
+  pthread_mutex_lock(&pool->mutex);
+  while (pool->queue_size > 0 || pool->working_count > 0) {
+    pthread_cond_wait(&pool->all_done, &pool->mutex);
+  }
+  pthread_mutex_unlock(&pool->mutex);
+  return 0;
 }
 
 int thread_pool_destroy(ThreadPool* pool) {
+  int i;
+
   if (pool == NULL) {
     return -1;
   }
 
-  /* TODO:
-   * The NULL check and final cleanup code are already provided.
-   * 1. Lock the mutex and set stop = 1.
-   * 2. Wake up all workers.
-   * 3. Join every worker thread.
-   *    This pthread_join loop should look similar to the pthread_create loop in
-   *    thread_pool_init().
-   */
+  pthread_mutex_lock(&pool->mutex);
+  pool->stop = 1;
+  pthread_cond_broadcast(&pool->not_empty);
+  pthread_cond_broadcast(&pool->not_full);
+  pthread_mutex_unlock(&pool->mutex);
+
+  for (i = 0; i < pool->thread_count; ++i) {
+    pthread_join(pool->threads[i], NULL);
+  }
 
   pthread_mutex_destroy(&pool->mutex);
   pthread_cond_destroy(&pool->not_empty);
@@ -133,5 +149,5 @@ int thread_pool_destroy(ThreadPool* pool) {
   free(pool->queue);
   memset(pool, 0, sizeof(*pool));
 
-  return -1;
+  return 0;
 }
