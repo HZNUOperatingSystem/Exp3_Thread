@@ -126,9 +126,9 @@ int pipeline_process_one_image(const ImageJob* job, const FilterConfig* config, 
 }
 
 int pipeline_run_image_batch(ImageBatchExecutor executor) {
-  static const char* list_path = "image/list.txt";
-  static const char* input_dir = "image/input";
-  static const char* gt_dir = "image/gt";
+  static const char* list_path = "images/list.txt";
+  static const char* input_dir = "images/input";
+  static const char* ground_truth_dir = "images/ground_truth";
   static const char* output_root = "output";
   const char* chapter;
   char output_dir[96];
@@ -152,7 +152,8 @@ int pipeline_run_image_batch(ImageBatchExecutor executor) {
 
   filter_default_config(&config);
 
-  job_count = dataset_load_jobs(list_path, input_dir, gt_dir, output_dir, jobs, MAX_IMAGE_JOBS);
+  job_count = dataset_load_jobs(list_path, input_dir, ground_truth_dir, output_dir, jobs,
+                                MAX_IMAGE_JOBS);
   if (job_count <= 0) {
     fprintf(stderr, "failed to load jobs from %s\n", list_path);
     return 1;

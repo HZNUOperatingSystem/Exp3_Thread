@@ -15,7 +15,5 @@
 
 补充说明：
 - 学生需要修改的源码统一放在 `src/` 下，例如 `src/ch1/main.c`、`src/ch3/thread_pool.c`、`src/common/metrics.c`
-- 第三方依赖统一放在 `third_party/` 下，例如 `third_party/stb/`
-- 章节说明文档仍然保留在根目录的 `ch1/`、`ch2/`、`ch3/`、`ch4/`
-- `make run-chX` 和 `autograde.sh` 会自动注入 `LAB_CHAPTER`，因此图片实验源码不需要显式传入章节名
+- 数据集统一放在 `images/` 下，其中输入图片在 `images/input/`，参考图片在 `images/ground_truth/`
 - 相关源文件中的 `TODO` 注释给出了实现提示

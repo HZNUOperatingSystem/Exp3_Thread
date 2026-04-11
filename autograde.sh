@@ -4,7 +4,7 @@ set -euo pipefail
 repo_root=$(cd -- "$(dirname -- "$0")" && pwd)
 source "$repo_root/tools/lab_meta.sh"
 
-dataset_dir="$repo_root/image"
+dataset_dir="$repo_root/images"
 reference_dir="$repo_root/reference/expected"
 metrics_reference_dir="$repo_root/reference/metrics"
 compare_png_bin="$repo_root/build/tools/compare_png"
@@ -160,7 +160,7 @@ run_image_chapter() {
   fi
 
   workdir=$(mktemp -d "${TMPDIR:-/tmp}/ex4os-${chapter}.XXXXXX")
-  cp -r "$dataset_dir" "$workdir/image"
+  cp -r "$dataset_dir" "$workdir/images"
   metrics_path="$workdir/$(lab_metrics_path "$chapter")"
   output_dir="$workdir/$(lab_output_dir "$chapter")"
   binary_name=$(lab_binary_name "$chapter")
