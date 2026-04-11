@@ -14,6 +14,18 @@ enum {
   PIPELINE_STATUS_METRICS = 5,
 };
 
+static int pipeline_has_failures(const ImageResult results[], int count) {
+  int i;
+
+  for (i = 0; i < count; ++i) {
+    if (results[i].status_code != 0) {
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
 static void pipeline_reset_result(ImageResult* result) {
   result->psnr_before = 0.0;
   result->psnr_after = 0.0;
@@ -99,6 +111,51 @@ int pipeline_process_one_image(const ImageJob* job, const FilterConfig* config, 
   image_free(&gt);
   image_free(&output);
   return 0;
+}
+
+int pipeline_run_image_batch(const char* chapter, int compute_ssim, ImageBatchExecutor executor) {
+  static const char* list_path = "image/list.txt";
+  static const char* input_dir = "image/input";
+  static const char* gt_dir = "image/gt";
+  char output_root[64];
+  char output_dir[96];
+  char metrics_path[128];
+  ImageJob jobs[MAX_IMAGE_JOBS];
+  ImageResult results[MAX_IMAGE_JOBS] = {0};
+  FilterConfig config;
+  int job_count;
+
+  if (chapter == NULL || executor == NULL) {
+    return 1;
+  }
+
+  snprintf(output_root, sizeof(output_root), "%s", chapter);
+  snprintf(output_dir, sizeof(output_dir), "%s/output", chapter);
+  snprintf(metrics_path, sizeof(metrics_path), "%s/output/metrics.csv", chapter);
+
+  filter_default_config(&config);
+
+  job_count = dataset_load_jobs(list_path, input_dir, gt_dir, output_dir, jobs, MAX_IMAGE_JOBS);
+  if (job_count <= 0) {
+    fprintf(stderr, "failed to load jobs from %s\n", list_path);
+    return 1;
+  }
+
+  if (dataset_ensure_directory(output_root) != 0 || dataset_ensure_directory(output_dir) != 0) {
+    fprintf(stderr, "failed to create output directories\n");
+    return 1;
+  }
+
+  if (executor(jobs, &config, compute_ssim, results, job_count) != 0) {
+    return 1;
+  }
+
+  if (pipeline_write_metrics_csv(metrics_path, jobs, results, job_count) != 0) {
+    fprintf(stderr, "failed to write %s\n", metrics_path);
+    return 1;
+  }
+
+  return pipeline_has_failures(results, job_count);
 }
 
 int pipeline_write_metrics_csv(const char* path, const ImageJob jobs[], const ImageResult results[],

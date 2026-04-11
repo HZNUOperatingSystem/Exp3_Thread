@@ -1,47 +1,22 @@
-#include <stdio.h>
-
 #include "ch3/thread_pool.h"
-#include "common/dataset.h"
-#include "common/filter.h"
 #include "common/pipeline.h"
 
 typedef struct {
   const ImageJob* job;
   const FilterConfig* config;
+  int compute_ssim;
   ImageResult* result;
 } BatchTask;
 
 static void image_job_worker(void* arg) {
   BatchTask* task = (BatchTask*)arg;
-  pipeline_process_one_image(task->job, task->config, 1, task->result);
+  pipeline_process_one_image(task->job, task->config, task->compute_ssim, task->result);
 }
 
-int main(void) {
-  const char* list_path = "image/list.txt";
-  const char* input_dir = "image/input";
-  const char* gt_dir = "image/gt";
-  const char* output_root = "ch4";
-  const char* output_dir = "ch4/output";
-  const char* metrics_path = "ch4/output/metrics.csv";
-  ImageJob jobs[MAX_IMAGE_JOBS];
-  ImageResult results[MAX_IMAGE_JOBS] = {0};
+static int execute_jobs(const ImageJob jobs[], const FilterConfig* config, int compute_ssim,
+                        ImageResult results[], int job_count) {
   BatchTask tasks[MAX_IMAGE_JOBS];
-  FilterConfig config;
-  int job_count;
   int i;
-
-  filter_default_config(&config);
-
-  job_count = dataset_load_jobs(list_path, input_dir, gt_dir, output_dir, jobs, MAX_IMAGE_JOBS);
-  if (job_count <= 0) {
-    fprintf(stderr, "failed to load jobs from %s\n", list_path);
-    return 1;
-  }
-
-  if (dataset_ensure_directory(output_root) != 0 || dataset_ensure_directory(output_dir) != 0) {
-    fprintf(stderr, "failed to create output directories\n");
-    return 1;
-  }
 
   /* TODO:
    * 1. Finish src/ch3/thread_pool.c.
@@ -59,21 +34,15 @@ int main(void) {
    */
   for (i = 0; i < job_count; ++i) {
     tasks[i].job = &jobs[i];
-    tasks[i].config = &config;
+    tasks[i].config = config;
+    tasks[i].compute_ssim = compute_ssim;
     tasks[i].result = &results[i];
     image_job_worker(&tasks[i]);
   }
 
-  if (pipeline_write_metrics_csv(metrics_path, jobs, results, job_count) != 0) {
-    fprintf(stderr, "failed to write %s\n", metrics_path);
-    return 1;
-  }
-
-  for (i = 0; i < job_count; ++i) {
-    if (results[i].status_code != 0) {
-      return 1;
-    }
-  }
-
   return 0;
+}
+
+int main(void) {
+  return pipeline_run_image_batch("ch4", 1, execute_jobs);
 }
