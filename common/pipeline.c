@@ -23,8 +23,8 @@ static void pipeline_reset_result(ImageResult* result) {
   result->status_code = PIPELINE_STATUS_OK;
 }
 
-int pipeline_process_one_image(const ImageJob* job, const FilterConfig* config,
-                               int compute_ssim, ImageResult* out_result) {
+int pipeline_process_one_image(const ImageJob* job, const FilterConfig* config, int compute_ssim,
+                               ImageResult* out_result) {
   ImageBuffer input = {0, 0, 0, NULL};
   ImageBuffer gt = {0, 0, 0, NULL};
   ImageBuffer output = {0, 0, 0, NULL};

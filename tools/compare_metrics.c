@@ -32,14 +32,16 @@ static int compare_numeric_field(const char* actual, const char* expected, doubl
 
   actual_value = strtod(actual, &actual_end);
   expected_value = strtod(expected, &expected_end);
-  if (actual_end == actual || expected_end == expected || *actual_end != '\0' || *expected_end != '\0') {
+  if (actual_end == actual || expected_end == expected || *actual_end != '\0' ||
+      *expected_end != '\0') {
     return -1;
   }
 
   return fabs(actual_value - expected_value) <= tolerance ? 0 : -1;
 }
 
-static int compare_metrics_files(const char* actual_path, const char* expected_path, double tolerance) {
+static int compare_metrics_files(const char* actual_path, const char* expected_path,
+                                 double tolerance) {
   FILE* actual = fopen(actual_path, "r");
   FILE* expected = fopen(expected_path, "r");
   char actual_line[LINE_BUFFER_SIZE];
@@ -70,13 +72,15 @@ static int compare_metrics_files(const char* actual_path, const char* expected_p
     }
 
     if (split_csv_line(actual_line, actual_fields, METRICS_FIELD_COUNT) != METRICS_FIELD_COUNT ||
-        split_csv_line(expected_line, expected_fields, METRICS_FIELD_COUNT) != METRICS_FIELD_COUNT) {
+        split_csv_line(expected_line, expected_fields, METRICS_FIELD_COUNT) !=
+            METRICS_FIELD_COUNT) {
       fclose(actual);
       fclose(expected);
       return -1;
     }
 
-    if (strcmp(actual_fields[0], expected_fields[0]) != 0 || strcmp(actual_fields[5], expected_fields[5]) != 0) {
+    if (strcmp(actual_fields[0], expected_fields[0]) != 0 ||
+        strcmp(actual_fields[5], expected_fields[5]) != 0) {
       fclose(actual);
       fclose(expected);
       return -1;

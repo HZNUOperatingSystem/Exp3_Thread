@@ -13,13 +13,9 @@ typedef struct {
   int status_code;
 } ImageResult;
 
-int pipeline_process_one_image(const ImageJob* job,
-                               const FilterConfig* config,
-                               int compute_ssim,
+int pipeline_process_one_image(const ImageJob* job, const FilterConfig* config, int compute_ssim,
                                ImageResult* out_result);
-int pipeline_write_metrics_csv(const char* path,
-                               const ImageJob jobs[],
-                               const ImageResult results[],
+int pipeline_write_metrics_csv(const char* path, const ImageJob jobs[], const ImageResult results[],
                                int count);
 
 #endif

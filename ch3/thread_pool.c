@@ -85,7 +85,6 @@ int thread_pool_submit(ThreadPool* pool, thread_task_fn fn, void* arg) {
    * 1. Lock the mutex.
    * 2. Wait on not_full while the queue is full and stop == 0.
    */
-  
   if (pool->stop) {
     pthread_mutex_unlock(&pool->mutex);
     return -1;
