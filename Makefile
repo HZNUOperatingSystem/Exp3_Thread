@@ -6,6 +6,7 @@ TOOLS := compare_png compare_metrics
 CHAPTER_BINARY := lab
 RUN_TARGETS := $(addprefix run-,$(CHAPTERS))
 PATH_TARGETS := $(addprefix path-,$(CHAPTERS))
+COMMON_SOURCES := $(wildcard src/common/*.c)
 
 # platform-specific openmp resolution
 
@@ -25,7 +26,7 @@ endif
 # compile flags
 
 CC ?= gcc # alias to clang on macOS
-CPPFLAGS ?= -I.
+CPPFLAGS ?= -Isrc -Ithird_party
 CFLAGS ?= -std=c11 -O2 -Wall -Wextra
 LDFLAGS ?=
 LDLIBS ?= -lm
@@ -34,10 +35,11 @@ BUILD_DIR ?= build
 PTHREAD_CFLAGS := -pthread
 PTHREAD_LDLIBS := -pthread
 
-FORMAT_FILES := $(shell find . \( -path './.git' -o -path './build' \) -prune -o -type f \( -name '*.c' -o -name '*.h' \) -print)
-GENERATED_OUTPUTS := $(foreach chapter,$(IMAGE_CHAPTERS),$(shell $(LAB_META) output-dir $(chapter)))
+FORMAT_FILES := $(shell find src tools -type f \( -name '*.c' -o -name '*.h' \) -print)
+GENERATED_OUTPUTS := $(addsuffix /output,$(IMAGE_CHAPTERS))
 chapter_target = $(BUILD_DIR)/$(1)/$(CHAPTER_BINARY)
-chapter_objects = $(patsubst %.c,$(BUILD_DIR)/%.o,$(shell $(LAB_META) sources $(1)))
+chapter_sources = $(wildcard src/$(1)/*.c) $(if $(filter $(1),$(IMAGE_CHAPTERS)),$(COMMON_SOURCES)) $(if $(filter ch4,$(1)),src/ch3/thread_pool.c)
+chapter_objects = $(patsubst %.c,$(BUILD_DIR)/%.o,$(call chapter_sources,$(1)))
 tool_target = $(BUILD_DIR)/tools/$(1)
 
 all: ch1 ch2 ch3 ch4 tools
@@ -80,10 +82,10 @@ $(BUILD_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-$(BUILD_DIR)/ch1/main.o: CFLAGS += $(OMP_CFLAGS)
-$(BUILD_DIR)/ch3/test_main.o $(BUILD_DIR)/ch3/thread_pool.o $(BUILD_DIR)/ch4/main.o: CFLAGS += $(PTHREAD_CFLAGS)
+$(BUILD_DIR)/src/ch1/main.o: CFLAGS += $(OMP_CFLAGS)
+$(BUILD_DIR)/src/ch3/main.o $(BUILD_DIR)/src/ch3/thread_pool.o $(BUILD_DIR)/src/ch4/main.o: CFLAGS += $(PTHREAD_CFLAGS)
 
-$(BUILD_DIR)/common/stb_impl.o: CFLAGS += -w
+$(BUILD_DIR)/src/common/stb_impl.o: CFLAGS += -w
 $(BUILD_DIR)/tools/compare_png.o: CFLAGS += -w
 
 clean:

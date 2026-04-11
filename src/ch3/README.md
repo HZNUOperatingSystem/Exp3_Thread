@@ -4,7 +4,7 @@
 - 用 `pthread` 实现线程池
 
 修改文件：
-- `ch3/thread_pool.c`
+- `src/ch3/thread_pool.c`
 
 要做的事：
 - `thread_pool_init(...)` 里的参数检查、分配内存和 `pthread_create(...)` 循环已经提供

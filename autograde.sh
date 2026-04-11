@@ -195,8 +195,10 @@ run_image_chapter() {
 }
 
 check_ch1_source() {
-  if ! grep -Eq '^#define[[:space:]]+IMAGE_PARALLEL_FOR[[:space:]]+_Pragma' "$repo_root/ch1/main.c"; then
-    echo "ch1/main.c must define IMAGE_PARALLEL_FOR with OpenMP" >&2
+  local source_path="$repo_root/$(lab_entry_source ch1)"
+
+  if ! grep -Eq '^#define[[:space:]]+IMAGE_PARALLEL_FOR[[:space:]]+_Pragma' "$source_path"; then
+    echo "src/ch1/main.c must define IMAGE_PARALLEL_FOR with OpenMP" >&2
     return 1
   fi
 }
@@ -211,12 +213,12 @@ grade_ch1() {
 }
 
 check_ch4_source() {
-  local source_path="$repo_root/ch4/main.c"
+  local source_path="$repo_root/$(lab_entry_source ch4)"
   local symbol=
 
   for symbol in thread_pool_init thread_pool_submit thread_pool_wait thread_pool_destroy; do
     if ! grep -Eq "${symbol}[[:space:]]*\\(" "$source_path"; then
-      echo "missing required call in ch4/main.c: ${symbol}(...)" >&2
+      echo "missing required call in src/ch4/main.c: ${symbol}(...)" >&2
       return 1
     fi
   done
@@ -242,7 +244,7 @@ grade_ch3() {
 
 grade_ch4() {
   if ! check_ch4_source; then
-    chapter_fail "ch4" "ch4/main.c is missing required thread pool calls"
+    chapter_fail "ch4" "src/ch4/main.c is missing required thread pool calls"
     return 1
   fi
 

@@ -4,7 +4,7 @@
 - 补全简化版 `SSIM` 计算
 
 修改文件：
-- `common/metrics.c`
+- `src/common/metrics.c`
 
 要做的事：
 - `images_match(...)` 和 `grayscale_value(...)` 已经提供

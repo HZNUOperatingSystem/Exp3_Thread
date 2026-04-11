@@ -44,7 +44,7 @@ int main(void) {
   }
 
   /* TODO:
-   * 1. Finish ch3/thread_pool.c.
+   * 1. Finish src/ch3/thread_pool.c.
    * 2. Create a pool with 4 worker threads.
    *    If thread_pool_init(...) fails, use:
    *    fprintf(stderr, "failed to initialize thread pool\n");
