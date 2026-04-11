@@ -70,21 +70,21 @@ grade_ch1() {
   fi
 
   expected_count=$(list_count)
-  if ! check_metrics_file "$workdir/output/ch1/metrics.csv" "$expected_count"; then
+  if ! check_metrics_file "$workdir/ch1/output/metrics.csv" "$expected_count"; then
     rm -rf "$workdir"
     echo "ch1: fail"
     echo "  reason: invalid metrics.csv" >&2
     return 1
   fi
 
-  if ! check_reference_metrics "$workdir/output/ch1/metrics.csv" "$metrics_reference_dir/ch1_metrics.csv"; then
+  if ! check_reference_metrics "$workdir/ch1/output/metrics.csv" "$metrics_reference_dir/ch1_metrics.csv"; then
     rm -rf "$workdir"
     echo "ch1: fail"
     echo "  reason: metrics.csv does not match reference" >&2
     return 1
   fi
 
-  if ! check_reference_images "$workdir/output/ch1"; then
+  if ! check_reference_images "$workdir/ch1/output"; then
     rm -rf "$workdir"
     echo "ch1: fail"
     echo "  reason: output images do not match reference" >&2
@@ -112,21 +112,21 @@ grade_ch2() {
   fi
 
   expected_count=$(list_count)
-  if ! check_metrics_file "$workdir/output/ch2/metrics.csv" "$expected_count"; then
+  if ! check_metrics_file "$workdir/ch2/output/metrics.csv" "$expected_count"; then
     rm -rf "$workdir"
     echo "ch2: fail"
     echo "  reason: invalid metrics.csv" >&2
     return 1
   fi
 
-  if ! check_reference_metrics "$workdir/output/ch2/metrics.csv" "$metrics_reference_dir/ch2_metrics.csv"; then
+  if ! check_reference_metrics "$workdir/ch2/output/metrics.csv" "$metrics_reference_dir/ch2_metrics.csv"; then
     rm -rf "$workdir"
     echo "ch2: fail"
     echo "  reason: metrics.csv does not match reference" >&2
     return 1
   fi
 
-  if ! check_reference_images "$workdir/output/ch2"; then
+  if ! check_reference_images "$workdir/ch2/output"; then
     rm -rf "$workdir"
     echo "ch2: fail"
     echo "  reason: output images do not match reference" >&2
@@ -184,21 +184,21 @@ grade_ch4() {
   fi
 
   expected_count=$(list_count)
-  if ! check_metrics_file "$workdir/output/ch4/metrics.csv" "$expected_count"; then
+  if ! check_metrics_file "$workdir/ch4/output/metrics.csv" "$expected_count"; then
     rm -rf "$workdir"
     echo "ch4: fail"
     echo "  reason: invalid metrics.csv" >&2
     return 1
   fi
 
-  if ! check_reference_metrics "$workdir/output/ch4/metrics.csv" "$metrics_reference_dir/ch4_metrics.csv"; then
+  if ! check_reference_metrics "$workdir/ch4/output/metrics.csv" "$metrics_reference_dir/ch4_metrics.csv"; then
     rm -rf "$workdir"
     echo "ch4: fail"
     echo "  reason: metrics.csv does not match reference" >&2
     return 1
   fi
 
-  if ! check_reference_images "$workdir/output/ch4"; then
+  if ! check_reference_images "$workdir/ch4/output"; then
     rm -rf "$workdir"
     echo "ch4: fail"
     echo "  reason: output images do not match reference" >&2

@@ -8,9 +8,9 @@ int main(void) {
   const char* list_path = "image/list.txt";
   const char* input_dir = "image/input";
   const char* gt_dir = "image/gt";
-  const char* output_root = "output";
-  const char* output_dir = "output/ch2";
-  const char* metrics_path = "output/ch2/metrics.csv";
+  const char* output_root = "ch2";
+  const char* output_dir = "ch2/output";
+  const char* metrics_path = "ch2/output/metrics.csv";
   ImageJob jobs[MAX_IMAGE_JOBS];
   ImageResult results[MAX_IMAGE_JOBS] = {0};
   FilterConfig config;

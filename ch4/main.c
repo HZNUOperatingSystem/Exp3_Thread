@@ -20,9 +20,9 @@ int main(void) {
   const char* list_path = "image/list.txt";
   const char* input_dir = "image/input";
   const char* gt_dir = "image/gt";
-  const char* output_root = "output";
-  const char* output_dir = "output/ch4";
-  const char* metrics_path = "output/ch4/metrics.csv";
+  const char* output_root = "ch4";
+  const char* output_dir = "ch4/output";
+  const char* metrics_path = "ch4/output/metrics.csv";
   ImageJob jobs[MAX_IMAGE_JOBS];
   ImageResult results[MAX_IMAGE_JOBS] = {0};
   BatchTask tasks[MAX_IMAGE_JOBS];
