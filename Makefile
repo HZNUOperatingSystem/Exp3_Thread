@@ -27,7 +27,7 @@ endif
 
 CC ?= gcc # alias to clang on macOS
 CPPFLAGS ?= -Isrc -Ithird_party
-CFLAGS ?= -std=c11 -O2 -Wall -Wextra
+CFLAGS ?= -std=c11 -O2 -Wall -Wextra -Wno-unused-variable
 LDFLAGS ?=
 LDLIBS ?= -lm
 
