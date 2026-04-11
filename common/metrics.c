@@ -53,11 +53,6 @@ int metrics_compute_ssim(const ImageBuffer* lhs, const ImageBuffer* rhs, double*
   double c2;
   double pixel_count;
 
-  /* Starter note:
-   * Variable declarations, shape checking, pixel_count, C1, and C2 are already
-   * provided.
-   * Delete the temporary (void) lines below once you start implementing SSIM.
-   */
   if (!images_match(lhs, rhs) || out_value == NULL) {
     return -1;
   }
@@ -66,28 +61,35 @@ int metrics_compute_ssim(const ImageBuffer* lhs, const ImageBuffer* rhs, double*
   c1 = (0.01 * 255.0) * (0.01 * 255.0);
   c2 = (0.03 * 255.0) * (0.03 * 255.0);
 
-  (void)grayscale_value;
-  (void)x;
-  (void)y;
-  (void)mean_x;
-  (void)mean_y;
-  (void)var_x;
-  (void)var_y;
-  (void)cov_xy;
-  (void)c1;
-  (void)c2;
-  (void)pixel_count;
+  /* TODO: delete the temporary (void) lines below, then accumulate mean_x and mean_y. */
+  for (y = 0; y < lhs->height; ++y) {
+    for (x = 0; x < lhs->width; ++x) {
+      size_t offset = ((size_t)y * (size_t)lhs->width + (size_t)x) * (size_t)lhs->channels;
+      double gray_x = grayscale_value(lhs->data + offset, lhs->channels);
+      double gray_y = grayscale_value(rhs->data + offset, rhs->channels);
+
+      (void)gray_x;
+      (void)gray_y;
+
+      /* TODO: accumulate mean_x and mean_y. */
+    }
+  }
+
+  mean_x /= pixel_count;
+  mean_y /= pixel_count;
 
   /* TODO:
-   * Implement the simplified global SSIM used in this lab.
-   *
-   * Suggested steps:
-   * 1. Delete the temporary (void) lines above.
-   * 2. Convert each pixel to grayscale with grayscale_value(...).
-   * 3. Compute the grayscale means mean_x and mean_y.
-   * 4. Compute var_x, var_y, and cov_xy over the whole image.
-   * 5. Store the result in *out_value.
+   * Write a second pass similar to the loop above.
+   * Recompute gray_x and gray_y, then use:
+   *   dx = gray_x - mean_x
+   *   dy = gray_y - mean_y
+   * to accumulate var_x, var_y, and cov_xy.
    */
+
+  var_x /= pixel_count;
+  var_y /= pixel_count;
+  cov_xy /= pixel_count;
+
   *out_value = ((2.0 * mean_x * mean_y + c1) * (2.0 * cov_xy + c2)) /
                ((mean_x * mean_x + mean_y * mean_y + c1) * (var_x + var_y + c2));
   return 0;
