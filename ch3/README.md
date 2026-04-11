@@ -7,10 +7,12 @@
 - `ch3/thread_pool.c`
 
 要做的事：
+- `thread_pool_init(...)` 里的参数检查、分配内存和 `pthread_create(...)` 循环已经提供
 - 完成 `thread_pool_worker(...)`
-- 完成 `thread_pool_submit(...)`
+- 完成 `thread_pool_submit(...)` 里剩下的队列逻辑
 - 完成 `thread_pool_wait(...)`
 - 完成 `thread_pool_destroy(...)`
+- 开始实现时，先删掉 starter 里为消除告警留下的 `(void)` 占位语句
 
 运行：
 

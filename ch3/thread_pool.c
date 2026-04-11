@@ -4,7 +4,11 @@
 #include <string.h>
 
 static void* thread_pool_worker(void* arg) {
-  (void)arg;
+  /* Starter note:
+   * - If you added temporary variables only to silence warnings, delete them
+   *   before you start the real implementation.
+   */
+  ThreadPool* pool = (ThreadPool*)arg;
 
   /* TODO:
    * 1. Lock the queue mutex.
@@ -65,24 +69,45 @@ int thread_pool_init(ThreadPool* pool, int thread_count, int queue_capacity) {
 }
 
 int thread_pool_submit(ThreadPool* pool, thread_task_fn fn, void* arg) {
+  /* Starter note:
+   * - The basic parameter check has already been provided.
+   * - Delete the temporary (void) lines below once you start implementing the
+   *   real queue logic.
+   */
   (void)pool;
   (void)fn;
   (void)arg;
+  if (pool == NULL || fn == NULL) {
+    return -1;
+  }
 
   /* TODO:
    * 1. Lock the mutex.
    * 2. Wait on not_full while the queue is full and stop == 0.
-   * 3. Reject new tasks if stop == 1.
-   * 4. Push the new task into the circular queue.
-   * 5. Signal not_empty and unlock.
+   */
+  
+  if (pool->stop) {
+    pthread_mutex_unlock(&pool->mutex);
+    return -1;
+  }
+
+  /* TODO:
+   * 3. Push the new task into the circular queue.
+   * 4. Signal not_empty and unlock.
    */
   return -1;
 }
 
 int thread_pool_wait(ThreadPool* pool) {
-  (void)pool;
+  if (pool == NULL) {
+    return -1;
+  }
 
-  /* TODO: wait until queue_size == 0 and working_count == 0. */
+  /* TODO:
+   * The NULL check has already been provided.
+   * Finish the synchronization logic so this function waits until
+   * queue_size == 0 and working_count == 0.
+   */
   return -1;
 }
 
@@ -92,6 +117,7 @@ int thread_pool_destroy(ThreadPool* pool) {
   }
 
   /* TODO:
+   * The NULL check and final cleanup code are already provided.
    * 1. Lock the mutex and set stop = 1.
    * 2. Wake up all workers.
    * 3. Join every worker thread.

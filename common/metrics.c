@@ -42,6 +42,9 @@ int metrics_compute_psnr(const ImageBuffer* lhs, const ImageBuffer* rhs, double*
 }
 
 int metrics_compute_ssim(const ImageBuffer* lhs, const ImageBuffer* rhs, double* out_value) {
+  /* Starter note:
+   * Delete the temporary (void) lines below once you start implementing SSIM.
+   */
   (void)grayscale_value;
   (void)lhs;
   (void)rhs;
