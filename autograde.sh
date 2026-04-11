@@ -240,6 +240,10 @@ main() {
   if [[ "$failures" -ne 0 ]]; then
     exit 1
   fi
+
+  if [[ "$chapter" == "all" ]]; then
+    printf '\033[1;32mAll chapters passed. Lab complete.\033[0m\n'
+  fi
 }
 
 CH1_TARGET_PATH=build/ch1/image_batch
