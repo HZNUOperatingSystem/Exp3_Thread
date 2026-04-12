@@ -218,7 +218,7 @@ $$
 - $\mu_x, \mu_y$：两张图的全局（或局部）平均值（亮度）
 - $\sigma_x^2, \sigma_y^2$：两张图的全局（或局部）方差（`var_x` 和 `var_y`）
 - $\sigma_{xy}$：两张图对应像素的协方差（`cov_xy`）
-- $C_1, C_2$：稳定常数（防止分母为 0），常用 $C_1 = (0.01 \times 255)^2 \approx 6.5025$，$C_2 = (0.03 \times 255)^2 \approx 58.5225$（8-bit 图像）
+- $C_1, C_2$：稳定常数（防止分母为 0），常用 $C_1 = (0.01 \times 255)^2 \approx 6.5025$，$C_2 = (0.03 \times 255)^2 \approx 58.5225$ （8-bit 图像）
 
 这样讲看不懂太正常了！听我娓娓道来，再回头看这个公式就好。
 
@@ -261,7 +261,7 @@ $$
 s(x, y) = \frac{\sigma_{xy} + C_3}{\sigma_x \sigma_y + C_3}
 $$
 
-把上面三个式子直接相乘（$\alpha = \beta = \gamma = 1$），再把 $C_3 = C_2 / 2$ 代入，分子和分母分别合并，就得到化简后的公式：
+把上面三个式子直接相乘（ $\alpha = \beta = \gamma = 1$ ），再把 $C_3 = C_2 / 2$ 代入，分子和分母分别合并，就得到化简后的公式：
 
 $$
 \mathrm{SSIM}(x, y)
@@ -271,13 +271,13 @@ $$
 
 至于怎么计算方差。
 
-先算平均值 $\mu_x$（`mean_x`）：
+先算平均值 $\mu_x$ （`mean_x`）：
 
 $$
 \mu_x = \frac{1}{N} \sum_{i=1}^{N} x_i
 $$
 
-再算方差 $\sigma_x^2$（`var_x`）：
+再算方差 $\sigma_x^2$ （`var_x`）：
 
 $$
 \sigma_x^2 = \frac{1}{N} \sum_{i=1}^{N} (x_i - \mu_x)^2
@@ -290,7 +290,7 @@ $$
 \mu_y = \frac{1}{N} \sum_{i=1}^{N} y_i
 $$
 
-再算协方差 $\sigma_{xy}$（`cov_xy`）：
+再算协方差 $\sigma_{xy}$ （`cov_xy`）：
 
 $$
 \sigma_{xy} = \frac{1}{N} \sum_{i=1}^{N} (x_i - \mu_x)(y_i - \mu_y)
@@ -323,14 +323,14 @@ $$
 
 其中：
 
-- 亮度分量：$l(x, y) = \frac{2\mu_x \mu_y + C_1}{\mu_x^2 + \mu_y^2 + C_1}$
-- 对比度分量：$c(x, y) = \frac{2\sigma_x \sigma_y + C_2}{\sigma_x^2 + \sigma_y^2 + C_2}$
-- 结构分量：$s(x, y) = \frac{\sigma_{xy} + C_3}{\sigma_x \sigma_y + C_3}$
+- 亮度分量： $l(x, y) = \frac{2\mu_x \mu_y + C_1}{\mu_x^2 + \mu_y^2 + C_1}$ 
+- 对比度分量： $c(x, y) = \frac{2\sigma_x \sigma_y + C_2}{\sigma_x^2 + \sigma_y^2 + C_2}$ 
+- 结构分量： $s(x, y) = \frac{\sigma_{xy} + C_3}{\sigma_x \sigma_y + C_3}$ 
 
-当两张图像完全一样（即 $x = y$）时：
+当两张图像完全一样（即 $x = y$ ）时：
 
-- $\mu_x = \mu_y$ → $l(x, y) = 1$
-- $\sigma_x = \sigma_y$ 且 $\sigma_{xy} = \sigma_x^2$ → $c(x, y) = 1$、$s(x, y) = 1$
+- $\mu_x = \mu_y$ → $l(x, y) = 1$ 
+- $\sigma_x = \sigma_y$ 且 $\sigma_{xy} = \sigma_x^2$ → $c(x, y) = 1$、$s(x, y) = 1$ 
 
 因此三个分量都等于 $1$，相乘后：
 
