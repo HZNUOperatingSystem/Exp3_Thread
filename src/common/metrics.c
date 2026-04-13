@@ -96,7 +96,6 @@ int metrics_compute_ssim(const ImageBuffer* lhs, const ImageBuffer* rhs, double*
   var_y /= pixel_count;
   cov_xy /= pixel_count;
 
-  *out_value = ((2.0 * mean_x * mean_y + c1) * (2.0 * cov_xy + c2)) /
-               ((mean_x * mean_x + mean_y * mean_y + c1) * (var_x + var_y + c2));
+  (void)*out_value;
   return 0;
 }

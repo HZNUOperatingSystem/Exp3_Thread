@@ -30,7 +30,8 @@ static int pipeline_has_failures(const ImageResult results[], int count) {
 
 static int pipeline_is_valid_chapter(const char* chapter) {
   return strcmp(chapter, "ch1") == 0 || strcmp(chapter, "ch2") == 0 ||
-         strcmp(chapter, "ch3") == 0 || strcmp(chapter, "ch4") == 0;
+         strcmp(chapter, "ch3") == 0 || strcmp(chapter, "ch4") == 0 ||
+         strcmp(chapter, "ch4x") == 0;
 }
 
 static const char* pipeline_current_chapter(void) {

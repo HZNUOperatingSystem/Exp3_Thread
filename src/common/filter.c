@@ -3,6 +3,8 @@
 #include <stddef.h>
 #include <stdlib.h>
 
+static FilterCnnImpl g_filter_cnn_impl = NULL;
+
 static int clamp_int(int value, int low, int high) {
   if (value < low) {
     return low;
@@ -35,6 +37,10 @@ void filter_default_config(FilterConfig* config) {
 
   config->kind = FILTER_KIND_MEDIAN;
   config->median_radius = 1;
+}
+
+void filter_set_cnn_impl(FilterCnnImpl impl) {
+  g_filter_cnn_impl = impl;
 }
 
 int filter_apply(const ImageBuffer* input, ImageBuffer* output, const FilterConfig* config) {
@@ -121,7 +127,9 @@ int filter_apply_bilateral(const ImageBuffer* input, ImageBuffer* output) {
 }
 
 int filter_apply_cnn(const ImageBuffer* input, ImageBuffer* output) {
-  (void)input;
-  (void)output;
-  return -1;
+  if (g_filter_cnn_impl == NULL) {
+    return -1;
+  }
+
+  return g_filter_cnn_impl(input, output);
 }
