@@ -3,6 +3,8 @@
 
 #include "common/image_io.h"
 
+typedef int (*FilterCnnImpl)(const ImageBuffer* input, ImageBuffer* output);
+
 typedef enum {
   FILTER_KIND_MEDIAN = 0,
   FILTER_KIND_BILATERAL = 1,
@@ -15,6 +17,7 @@ typedef struct {
 } FilterConfig;
 
 void filter_default_config(FilterConfig* config);
+void filter_set_cnn_impl(FilterCnnImpl impl);
 int filter_apply(const ImageBuffer* input, ImageBuffer* output, const FilterConfig* config);
 int filter_apply_median(const ImageBuffer* input, ImageBuffer* output, int radius);
 int filter_apply_bilateral(const ImageBuffer* input, ImageBuffer* output);
