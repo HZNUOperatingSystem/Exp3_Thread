@@ -7,7 +7,7 @@ CHAPTER_BINARY := lab
 RUN_TARGETS := $(addprefix run-,$(CHAPTERS))
 GRADE_TARGETS := $(addprefix grade-,$(CHAPTERS))
 PATH_TARGETS := $(addprefix path-,$(CHAPTERS))
-COMMON_SOURCES := $(wildcard src/common/*.c)
+COMMON_SOURCES := $(filter-out src/common/onnx_inference.c,$(wildcard src/common/*.c))
 
 # platform-specific openmp resolution
 
@@ -24,6 +24,11 @@ else
     OMP_LDFLAGS := -fopenmp
 endif
 
+# onnx runtime platform detection
+ONNX_DETECT := $(BASH) tools/onnx_detect.sh
+ONNX_CFLAGS := $(shell $(ONNX_DETECT) cflags)
+ONNX_LDFLAGS := $(shell $(ONNX_DETECT) ldflags)
+
 # compile flags
 
 CC ?= gcc # alias to clang on macOS
@@ -39,7 +44,7 @@ PTHREAD_LDLIBS := -pthread
 FORMAT_FILES := $(shell find src tools -type f \( -name '*.c' -o -name '*.h' \) -print)
 GENERATED_OUTPUTS := $(addprefix output/,$(IMAGE_CHAPTERS))
 chapter_target = $(BUILD_DIR)/$(1)/$(CHAPTER_BINARY)
-chapter_sources = $(wildcard src/$(1)/*.c) $(if $(filter $(1),$(IMAGE_CHAPTERS)),$(COMMON_SOURCES)) $(if $(filter ch4,$(1)),src/ch3/thread_pool.c)
+chapter_sources = $(wildcard src/$(1)/*.c) $(if $(filter $(1),$(IMAGE_CHAPTERS)),$(COMMON_SOURCES)) $(if $(filter ch4,$(1)),src/ch3/thread_pool.c src/common/onnx_inference.c)
 chapter_objects = $(patsubst %.c,$(BUILD_DIR)/%.o,$(call chapter_sources,$(1)))
 tool_target = $(BUILD_DIR)/tools/$(1)
 
@@ -69,7 +74,7 @@ $(1): $(call chapter_target,$(1))
 
 $(call chapter_target,$(1)): $(call chapter_objects,$(1))
 	@mkdir -p $$(dir $$@)
-	$(CC) $$^ $(LDFLAGS) $(LDLIBS) $(if $(filter ch1,$(1)),$(OMP_LDFLAGS)) $(if $(filter ch3 ch4,$(1)),$(PTHREAD_LDLIBS)) -o $$@
+	$(CC) $$^ $(LDFLAGS) $(LDLIBS) $(if $(filter ch1,$(1)),$(OMP_LDFLAGS)) $(if $(filter ch3 ch4,$(1)),$(PTHREAD_LDLIBS)) $(if $(filter ch4,$(1)),$(ONNX_LDFLAGS)) -o $$@
 
 run-$(1): $(1)
 	LAB_CHAPTER=$(1) ./$(call chapter_target,$(1))
@@ -97,8 +102,11 @@ $(BUILD_DIR)/%.o: %.c
 	@mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
+# Target-specific flags (must be defined before the rules are expanded)
 $(BUILD_DIR)/src/ch1/main.o: CFLAGS += $(OMP_CFLAGS)
 $(BUILD_DIR)/src/ch3/main.o $(BUILD_DIR)/src/ch3/thread_pool.o $(BUILD_DIR)/src/ch4/main.o: CFLAGS += $(PTHREAD_CFLAGS)
+$(BUILD_DIR)/src/common/onnx_inference.o: CFLAGS += $(ONNX_CFLAGS)
+$(BUILD_DIR)/src/ch4/filter_cnn.o: CFLAGS += $(ONNX_CFLAGS)
 
 $(BUILD_DIR)/src/common/stb_impl.o: CFLAGS += -w
 $(BUILD_DIR)/tools/compare_png.o: CFLAGS += -w
