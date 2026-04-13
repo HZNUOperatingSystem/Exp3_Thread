@@ -92,10 +92,14 @@ while (pool->queue_size == 0 && pool->stop == 0) {
     pthread_cond_wait(&pool->not_empty, &pool->mutex);
 }
 
-// 4. 被叫醒了，而且 queue_size > 0 了！可以拿任务干活了！
-// 取出任务...
+// 4. 被叫醒了，且 queue_size > 0 ！从队列中取出任务，更新 queue_size 和 queue_head 等状态...
 
-pthread_mutex_unlock(&pool->mutex); // 5. 别忘了最终解锁
+pthread_mutex_unlock(&pool->mutex); // 5. 关键：拿到任务后，先解锁！！！
+
+// 6. 真正开始干活（千万别拿着锁干活，不然别人连任务都领不到！）
+// task.fn(task.arg);
+
+// 7. 干完活后，可能还需要重新加锁更新一下 working_count，然后发个 all_done 广播.
 ```
 
 **为什么一定要用 `while` 而不是 `if` 呢？**
@@ -145,6 +149,26 @@ pool->queue_head = (pool->queue_head + 1) % pool->queue_capacity;
 pthread_join(thread_id, NULL);
 ```
 这个函数会让调用它的线程（比如老板）阻塞在这里，一直等到指定的 `thread_id` 线程安全退出（也就是 `thread_pool_worker` 函数执行完毕 `return NULL;` 了），老板才会继续往下走。这样就能保证所有的打工人都被妥善安置啦！
+
+### 补充小知识：函数指针与 `void*`
+
+在上面第 6 步，我们提到了执行任务：`task.fn(task.arg);`，这里涉及到 C 语言里一个非常强大但容易让人头晕的特性——**函数指针**。
+
+看看我们 `thread_pool.h` 头文件里定义的 `ThreadTask`：
+
+```c
+typedef void (*thread_task_fn)(void*);
+
+typedef struct {
+  thread_task_fn fn;
+  void* arg;
+} ThreadTask;
+```
+
+- `thread_task_fn` 是一个自定义类型，它表示**“指向一个函数的指针”**。这个函数长什么样呢？它必须接收一个 `void*` 类型的参数，并且没有返回值（`void`）。
+- `void*` 是什么？它是 C 语言里的“万能指针”，可以指向任何类型的数据（比如整型数组、图片结构体等等）。因为写线程池的时候，我们根本不知道未来别人会丢给它什么奇怪的任务、需要什么复杂的参数，所以我们统一用 `void*` 接收。等真正在任务函数内部执行时，再把它强转回原来的类型就行了。
+
+所以，把任务塞进队列，其实就是把**“要执行的函数地址 (`fn`)”**和**“这个函数的参数地址 (`arg`)”**打包成一个 `ThreadTask` 结构体存起来。等打工线程从队列里拿到这个包裹，直接调用 `fn(arg)` 就可以开始干活啦！
 
 ### 你的任务 (TODO)
 
