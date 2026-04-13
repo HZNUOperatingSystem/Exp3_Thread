@@ -1,0 +1,1 @@
+This folder contains ONNX Runtime (v1.24.4) dynamic libraries and headers. These are bundled directly in the repository to prevent potential network issues during the setup process on students' computer.
