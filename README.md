@@ -1,4 +1,4 @@
-# ex4os
+# ex3_thread of OS
 
 以下命令都需要在仓库根目录执行。
 
