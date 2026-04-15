@@ -5,10 +5,8 @@ IMAGE_CHAPTERS := $(shell $(LAB_META) list-image-chapters)
 EXTRA_CHAPTERS := ch4x
 TOOLS := compare_png
 CHAPTER_BINARY := lab
-RUN_TARGETS := $(addprefix run-,$(CHAPTERS))
 GRADE_TARGETS := $(addprefix grade-,$(CHAPTERS))
 PATH_TARGETS := $(addprefix path-,$(CHAPTERS))
-EXTRA_RUN_TARGETS := $(addprefix run-,$(EXTRA_CHAPTERS))
 EXTRA_PATH_TARGETS := $(addprefix path-,$(EXTRA_CHAPTERS))
 COMMON_SOURCES := $(filter-out src/common/onnx_inference.c,$(wildcard src/common/*.c))
 
@@ -62,15 +60,10 @@ help:
 	@printf '%s\n' 'Common targets: all clean format tools help'
 	@printf '%s\n' 'Chapter build targets: $(CHAPTERS)'
 	@printf '%s\n' 'Extra build targets: $(EXTRA_CHAPTERS)'
-	@printf '%s\n' 'Aggregate run target: run-all'
 	@printf '%s\n' 'Aggregate grade target: grade-all'
-	@printf '%s\n' 'Run helpers: $(RUN_TARGETS)'
-	@printf '%s\n' 'Extra run helpers: $(EXTRA_RUN_TARGETS)'
 	@printf '%s\n' 'Grade helpers: $(GRADE_TARGETS)'
 	@printf '%s\n' 'Path helpers: $(PATH_TARGETS)'
 	@printf '%s\n' 'Extra path helpers: $(EXTRA_PATH_TARGETS)'
-
-run-all: $(RUN_TARGETS) $(EXTRA_RUN_TARGETS)
 
 grade-all:
 	$(MAKE) grade-ch1
@@ -85,10 +78,7 @@ $(call chapter_target,$(1)): $(call chapter_objects,$(1))
 	@mkdir -p $$(dir $$@)
 	$(CC) $$^ $(LDFLAGS) $(LDLIBS) $(if $(filter ch1,$(1)),$(OMP_LDFLAGS)) $(if $(filter ch3 ch4,$(1)),$(PTHREAD_LDLIBS)) $(if $(filter ch4,$(1)),$(ONNX_LDFLAGS)) -o $$@
 
-run-$(1): $(1)
-	LAB_CHAPTER=$(1) ./$(call chapter_target,$(1))
-
-grade-$(1): run-$(1)
+grade-$(1): $(1) $(if $(filter $(IMAGE_CHAPTERS),$(1)),tools)
 	$(BASH) ./autograde.sh $(1)
 
 path-$(1):
@@ -138,4 +128,4 @@ clean:
 format:
 	clang-format -i $(FORMAT_FILES)
 
-.PHONY: all tools clean format help run-all grade-all ch4x $(CHAPTERS) $(TOOLS) $(RUN_TARGETS) $(EXTRA_RUN_TARGETS) $(GRADE_TARGETS) $(PATH_TARGETS) $(EXTRA_PATH_TARGETS)
+.PHONY: all tools clean format help grade-all ch4x $(CHAPTERS) $(TOOLS) $(GRADE_TARGETS) $(PATH_TARGETS) $(EXTRA_PATH_TARGETS)
