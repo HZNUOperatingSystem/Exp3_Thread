@@ -144,6 +144,14 @@ chapter_metric_bounds() {
         "0.9405 0.9425" \
         "0.9678 0.9700"
       ;;
+    ch4x)
+      printf '%s\n' \
+        "21.20 21.45" \
+        "24.40 24.65" \
+        "0" \
+        "N/A" \
+        "N/A"
+      ;;
     *)
       return 1
       ;;
@@ -161,7 +169,7 @@ check_metrics_thresholds() {
   local ssim_before_bounds=
   local ssim_after_bounds=
 
-  if ! mapfile -t metric_lines < <(chapter_metric_bounds "$chapter"); then
+  if ! IFS=$'\n' read -r -d '' -a metric_lines < <(chapter_metric_bounds "$chapter" && printf '\0'); then
     echo "missing metric bounds for chapter: $chapter" >&2
     return 1
   fi
@@ -291,6 +299,10 @@ grade_ch4() {
   run_image_chapter "ch4"
 }
 
+grade_ch4x() {
+  run_image_chapter "ch4x"
+}
+
 main() {
   local chapter=${1:-all}
   local failures=0
@@ -301,6 +313,7 @@ main() {
       grade_ch2 || failures=1
       grade_ch3 || failures=1
       grade_ch4 || failures=1
+      grade_ch4x || failures=1
       ;;
     ch1)
       grade_ch1 || failures=1
@@ -313,6 +326,9 @@ main() {
       ;;
     ch4)
       grade_ch4 || failures=1
+      ;;
+    ch4x)
+      grade_ch4x || failures=1
       ;;
     *)
       usage

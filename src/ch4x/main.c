@@ -9,7 +9,7 @@ static int execute_jobs(const ImageJob jobs[], const FilterConfig* config, Image
   local_config.kind = FILTER_KIND_CNN;
 
   for (i = 0; i < job_count; ++i) {
-    pipeline_process_one_image(&jobs[i], &local_config, 1, &results[i]);
+    pipeline_process_one_image(&jobs[i], &local_config, 0, &results[i]);
   }
 
   return 0;

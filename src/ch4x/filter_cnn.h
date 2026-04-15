@@ -6,7 +6,7 @@
 /**
  * @brief Apply CNN-based image restoration using ONNX model.
  *
- * Set CNN_MODEL_PATH environment variable to the .onnx model file path.
+ * The model-loading logic is defined in the ch4x source files.
  *
  * @param input Input image buffer
  * @param output Output image buffer (must be pre-allocated)

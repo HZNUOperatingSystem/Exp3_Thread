@@ -1,8 +1,20 @@
 #include "filter_cnn.h"
-#include "common/onnx_inference.h"
+#include "ch4x/onnx_inference.h"
 
 #include <stdio.h>
-#include <stdlib.h>
+
+/**
+ * TODO:
+ * Decide how the program locates the ONNX model file.
+ *
+ * Suggested directions:
+ * - hard-code a repo-relative path while you are experimenting
+ * - keep the path in one place so it is easy to change later
+ * - return NULL when the model path has not been configured yet
+ */
+static const char* cnn_model_path(void) {
+  return NULL;
+}
 
 int filter_apply_cnn_impl(const ImageBuffer* input, ImageBuffer* output) {
   OnnxSession* session = NULL;
@@ -16,9 +28,9 @@ int filter_apply_cnn_impl(const ImageBuffer* input, ImageBuffer* output) {
     return -1;
   }
 
-  model_path = getenv("CNN_MODEL_PATH");
-  if (model_path == NULL || model_path[0] == '\0') {
-    fprintf(stderr, "CNN filter: CNN_MODEL_PATH environment variable not set\n");
+  model_path = cnn_model_path();
+  if (model_path == NULL) {
+    fprintf(stderr, "CNN filter: configure the model path in src/ch4x/filter_cnn.c\n");
     return -1;
   }
 

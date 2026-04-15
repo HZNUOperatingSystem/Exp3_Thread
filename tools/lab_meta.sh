@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-LAB_CHAPTERS=(ch1 ch2 ch3 ch4)
-LAB_IMAGE_CHAPTERS=(ch1 ch2 ch4)
+LAB_CHAPTERS=(ch1 ch2 ch3 ch4 ch4x)
+LAB_IMAGE_CHAPTERS=(ch1 ch2 ch4 ch4x)
 LAB_CHAPTER_BINARY=lab
 
 lab_is_chapter() {
@@ -52,7 +52,7 @@ lab_target_path() {
 lab_timeout_seconds() {
   case "${1:-}" in
     ch3) printf '%s\n' "20" ;;
-    ch1 | ch2 | ch4) printf '%s\n' "60" ;;
+    ch1 | ch2 | ch4 | ch4x) printf '%s\n' "60" ;;
     *) return 1 ;;
   esac
 }

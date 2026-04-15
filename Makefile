@@ -2,13 +2,12 @@ BASH ?= bash
 LAB_META := $(BASH) tools/lab_meta.sh
 CHAPTERS := $(shell $(LAB_META) list-chapters)
 IMAGE_CHAPTERS := $(shell $(LAB_META) list-image-chapters)
-EXTRA_CHAPTERS := ch4x
 TOOLS := compare_png
 CHAPTER_BINARY := lab
+RUN_TARGETS := $(addprefix run-,$(CHAPTERS))
 GRADE_TARGETS := $(addprefix grade-,$(CHAPTERS))
 PATH_TARGETS := $(addprefix path-,$(CHAPTERS))
-EXTRA_PATH_TARGETS := $(addprefix path-,$(EXTRA_CHAPTERS))
-COMMON_SOURCES := $(filter-out src/common/onnx_inference.c,$(wildcard src/common/*.c))
+COMMON_SOURCES := $(wildcard src/common/*.c)
 
 # platform-specific openmp resolution
 
@@ -43,14 +42,14 @@ PTHREAD_CFLAGS := -pthread
 PTHREAD_LDLIBS := -pthread
 
 FORMAT_FILES := $(shell find src tools -type f \( -name '*.c' -o -name '*.h' \) -print)
-GENERATED_OUTPUTS := $(addprefix output/,$(IMAGE_CHAPTERS)) $(addprefix output/,$(EXTRA_CHAPTERS))
+GENERATED_OUTPUTS := $(addprefix output/,$(IMAGE_CHAPTERS))
 chapter_target = $(BUILD_DIR)/$(1)/$(CHAPTER_BINARY)
-chapter_sources = $(wildcard src/$(1)/*.c) $(if $(filter $(1),$(IMAGE_CHAPTERS)),$(COMMON_SOURCES)) $(if $(filter ch4,$(1)),src/ch3/thread_pool.c src/common/onnx_inference.c)
+chapter_extra_sources = $(if $(filter ch4,$(1)),src/ch3/thread_pool.c)
+chapter_sources = $(wildcard src/$(1)/*.c) $(if $(filter $(1),$(IMAGE_CHAPTERS)),$(COMMON_SOURCES)) $(call chapter_extra_sources,$(1))
 chapter_objects = $(patsubst %.c,$(BUILD_DIR)/%.o,$(call chapter_sources,$(1)))
+chapter_link_libs = $(if $(filter ch1,$(1)),$(OMP_LDFLAGS)) $(if $(filter ch3 ch4,$(1)),$(PTHREAD_LDLIBS)) $(if $(filter ch4x,$(1)),$(ONNX_LDFLAGS))
+chapter_run_prefix = $(if $(filter $(1),$(IMAGE_CHAPTERS)),LAB_CHAPTER=$(1) ,)
 tool_target = $(BUILD_DIR)/tools/$(1)
-ch4x_target = $(BUILD_DIR)/ch4x/$(CHAPTER_BINARY)
-ch4x_sources = $(wildcard src/ch4x/*.c) $(COMMON_SOURCES) src/common/onnx_inference.c
-ch4x_objects = $(patsubst %.c,$(BUILD_DIR)/%.o,$(ch4x_sources))
 
 all: ch1 ch2 ch3 ch4 ch4x tools
 
@@ -59,26 +58,28 @@ tools: $(TOOLS)
 help:
 	@printf '%s\n' 'Common targets: all clean format tools help'
 	@printf '%s\n' 'Chapter build targets: $(CHAPTERS)'
-	@printf '%s\n' 'Extra build targets: $(EXTRA_CHAPTERS)'
+	@printf '%s\n' 'Run helpers: $(RUN_TARGETS) run-all'
 	@printf '%s\n' 'Aggregate grade target: grade-all'
 	@printf '%s\n' 'Grade helpers: $(GRADE_TARGETS)'
 	@printf '%s\n' 'Path helpers: $(PATH_TARGETS)'
-	@printf '%s\n' 'Extra path helpers: $(EXTRA_PATH_TARGETS)'
+
+run-all:
+	@set -e; for chapter in $(CHAPTERS); do $(MAKE) run-$$chapter; done
 
 grade-all:
-	$(MAKE) grade-ch1
-	$(MAKE) grade-ch2
-	$(MAKE) grade-ch3
-	$(MAKE) grade-ch4
+	@set -e; for chapter in $(CHAPTERS); do $(MAKE) grade-$$chapter; done
 
 define DEFINE_CHAPTER_RULES
 $(1): $(call chapter_target,$(1))
 
 $(call chapter_target,$(1)): $(call chapter_objects,$(1))
 	@mkdir -p $$(dir $$@)
-	$(CC) $$^ $(LDFLAGS) $(LDLIBS) $(if $(filter ch1,$(1)),$(OMP_LDFLAGS)) $(if $(filter ch3 ch4,$(1)),$(PTHREAD_LDLIBS)) $(if $(filter ch4,$(1)),$(ONNX_LDFLAGS)) -o $$@
+	$(CC) $$^ $(LDFLAGS) $(LDLIBS) $(call chapter_link_libs,$(1)) -o $$@
 
-grade-$(1): $(1) $(if $(filter $(IMAGE_CHAPTERS),$(1)),tools)
+run-$(1): $(1)
+	$(call chapter_run_prefix,$(1))./$(call chapter_target,$(1))
+
+grade-$(1): $(1) $(if $(filter $(1),$(IMAGE_CHAPTERS)),tools)
 	$(BASH) ./autograde.sh $(1)
 
 path-$(1):
@@ -86,18 +87,6 @@ path-$(1):
 endef
 
 $(foreach chapter,$(CHAPTERS),$(eval $(call DEFINE_CHAPTER_RULES,$(chapter))))
-
-ch4x: $(ch4x_target)
-
-$(ch4x_target): $(ch4x_objects)
-	@mkdir -p $(dir $@)
-	$(CC) $^ $(LDFLAGS) $(LDLIBS) $(ONNX_LDFLAGS) -o $@
-
-run-ch4x: ch4x
-	LAB_CHAPTER=ch4x ./$(ch4x_target)
-
-path-ch4x:
-	@printf '%s\n' '$(ch4x_target)'
 
 define DEFINE_TOOL_RULES
 $(1): $(call tool_target,$(1))
@@ -116,8 +105,7 @@ $(BUILD_DIR)/%.o: %.c
 # Target-specific flags (must be defined before the rules are expanded)
 $(BUILD_DIR)/src/ch1/main.o: CFLAGS += $(OMP_CFLAGS)
 $(BUILD_DIR)/src/ch3/main.o $(BUILD_DIR)/src/ch3/thread_pool.o $(BUILD_DIR)/src/ch4/main.o: CFLAGS += $(PTHREAD_CFLAGS)
-$(BUILD_DIR)/src/common/onnx_inference.o: CFLAGS += $(ONNX_CFLAGS)
-$(BUILD_DIR)/src/ch4x/filter_cnn.o: CFLAGS += $(ONNX_CFLAGS)
+$(BUILD_DIR)/src/ch4x/onnx_inference.o: CFLAGS += $(ONNX_CFLAGS)
 
 $(BUILD_DIR)/src/common/stb_impl.o: CFLAGS += -w
 $(BUILD_DIR)/tools/compare_png.o: CFLAGS += -w
@@ -128,4 +116,4 @@ clean:
 format:
 	clang-format -i $(FORMAT_FILES)
 
-.PHONY: all tools clean format help grade-all ch4x $(CHAPTERS) $(TOOLS) $(GRADE_TARGETS) $(PATH_TARGETS) $(EXTRA_PATH_TARGETS)
+.PHONY: all tools clean format help run-all grade-all $(CHAPTERS) $(TOOLS) $(RUN_TARGETS) $(GRADE_TARGETS) $(PATH_TARGETS)
