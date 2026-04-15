@@ -189,7 +189,6 @@ check_metrics_thresholds() {
 
 run_image_chapter() {
   local chapter=$1
-  local workdir=
   local expected_count=
   local metrics_path=
   local output_dir=
@@ -205,38 +204,33 @@ run_image_chapter() {
     return 1
   fi
 
-  workdir=$(mktemp -d "${TMPDIR:-/tmp}/ex4os-${chapter}.XXXXXX")
-  cp -r "$dataset_dir" "$workdir/images"
-  metrics_path="$workdir/$(lab_metrics_path "$chapter")"
-  output_dir="$workdir/$(lab_output_dir "$chapter")"
+  output_dir="$repo_root/$(lab_output_dir "$chapter")"
+  metrics_path="$repo_root/$(lab_metrics_path "$chapter")"
   binary_name=$(lab_binary_name "$chapter")
 
-  if ! (cd "$workdir" && LAB_CHAPTER="$chapter" run_with_timeout "$(lab_timeout_seconds "$chapter")" "$(chapter_binary_path "$chapter")"); then
-    rm -rf "$workdir"
+  rm -rf "$output_dir"
+
+  if ! (cd "$repo_root" && LAB_CHAPTER="$chapter" run_with_timeout "$(lab_timeout_seconds "$chapter")" "$(chapter_binary_path "$chapter")"); then
     chapter_fail "$chapter" "$binary_name failed or timed out"
     return 1
   fi
 
   expected_count=$(list_count)
   if ! check_metrics_file "$metrics_path" "$expected_count"; then
-    rm -rf "$workdir"
     chapter_fail "$chapter" "invalid metrics.csv"
     return 1
   fi
 
   if ! check_metrics_thresholds "$chapter" "$metrics_path" "$expected_count"; then
-    rm -rf "$workdir"
     chapter_fail "$chapter" "metrics.csv is outside the expected metric range"
     return 1
   fi
 
   if ! check_output_images "$output_dir"; then
-    rm -rf "$workdir"
     chapter_fail "$chapter" "output images are missing or unreadable"
     return 1
   fi
 
-  rm -rf "$workdir"
   echo "$chapter: pass"
 }
 
