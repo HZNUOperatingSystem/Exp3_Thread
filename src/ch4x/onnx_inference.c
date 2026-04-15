@@ -45,23 +45,15 @@ OnnxSession* onnx_session_create(const char* model_path) {
   }
 
   /*
-   * TODO:
-   * Build the ONNX Runtime session here.
-   *
-   * A typical implementation needs to:
-   * 1. create the OrtEnv
-   * 2. create and configure OrtSessionOptions
-   * 3. open the model from model_path
-   * 4. create CPU memory info for tensor buffers
-   * 5. store the created handles inside `session`
-   *
-   * Return the allocated session on success.
-   * If any step fails:
-   * - record a helpful error with set_last_error(...)
-   * - release every partially-created ONNX object
-   * - free(session)
-   * - return NULL
-   */
+  * TODO:
+  * Build the ONNX Runtime session here.
+  *
+  * A typical implementation needs few steps,
+  * you should setup environment, create session,
+  * setting device and somehow IO.
+  *
+  * You are required to make inference on your CPU.
+  */
 
   set_last_error("TODO: implement onnx_session_create in src/ch4x/onnx_inference.c");
   free(session);
@@ -104,24 +96,22 @@ int onnx_run_inference(OnnxSession* session, const ImageBuffer* input, ImageBuff
   }
 
   /*
-   * TODO:
-   * Convert the input image into the tensor format expected by the ONNX model
-   * and run inference.
-   *
-   * Recommended steps:
-   * 1. allocate a float buffer for the normalized input tensor
-   * 2. reorder image data from HWC into the layout expected by the model
-   * 3. create the OrtValue input tensor
-   * 4. call OrtSession::Run with the correct input/output node names
-   * 5. read the output tensor back
-   * 6. convert the float output into 8-bit image pixels
-   * 7. release every temporary ONNX object and heap allocation
-   *
-   * On failure:
-   * - call set_last_error(...) with a useful message
-   * - clean up temporary resources
-   * - return -1
-   */
+  * TODO:
+  * Prepare the input image data for the model and perform inference,
+  * then convert the model output back to the output image buffer.
+  *
+  * You will need to:
+  * - Transform the raw image bytes into the tensor format the model expects
+  * - Execute the model using the prepared session
+  * - Extract and post-process the result tensor into 8-bit image data
+  *
+  * On any error:
+  * - Use set_last_error() with a descriptive message
+  * - Clean up any temporary resources you allocated
+  * - Return -1
+  *
+  * Keep resource management careful to avoid leaks.
+  */
 
   set_last_error("TODO: implement onnx_run_inference in src/ch4x/onnx_inference.c");
   return -1;
