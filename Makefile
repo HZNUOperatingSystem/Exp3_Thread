@@ -116,4 +116,9 @@ clean:
 format:
 	clang-format -i $(FORMAT_FILES)
 
-.PHONY: all tools clean format help run-all grade-all $(CHAPTERS) $(TOOLS) $(RUN_TARGETS) $(GRADE_TARGETS) $(PATH_TARGETS)
+SUBMIT_ARCHIVE := submit.tar.gz
+
+submit:
+	tar czf $(SUBMIT_ARCHIVE) src/
+
+.PHONY: all tools clean format help grade-all submit $(CHAPTERS) $(TOOLS) $(RUN_TARGETS) $(GRADE_TARGETS) $(PATH_TARGETS)
