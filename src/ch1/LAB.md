@@ -15,5 +15,5 @@
 运行：
 
 ```bash
-./autograde.sh ch1
+maeke grade-ch1
 ```

@@ -17,5 +17,5 @@
 运行：
 
 ```bash
-./autograde.sh ch3
+make grade-ch3
 ```

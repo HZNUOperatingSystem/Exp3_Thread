@@ -12,7 +12,7 @@
 运行方式
 
 ```bash
-./autograde.sh grade-ch4x
+make grade-ch4x
 ```
 
 你需要自行决定：
