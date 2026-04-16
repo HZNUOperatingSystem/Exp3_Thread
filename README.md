@@ -51,6 +51,8 @@ make grade-all
 | ch4 | `src/ch4/main.c` |
 | ch4x | `src/ch4x/filter_cnn.c`、`src/ch4x/onnx_inference.c` |
 
+**提交作业时, 使用 `make submit`, 该命令会将 `src` 文件夹统一打包成 `submit.tar.gz`**
+
 </Callout>
 
 <Callout title="环境要求" type="warn">
